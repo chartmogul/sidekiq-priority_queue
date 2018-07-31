@@ -3,11 +3,16 @@ require 'sidekiq'
 
 module Sidekiq
   module PriorityFetch
+
+    ##
+    # Provides priority queue processing via a Redis script emulating ZPOPMIN
+    #
+
     class PriorityFetch
-      # We want the fetch operation to timeout every few seconds so the thread
-      # can check if the process is shutting down.
+      #TODO what meaning does timeout have when using lua scripts? none?
       TIMEOUT = 2
 
+      #TODO should we include the priority here for bulk_requeue? probably...
       UnitOfWork = Struct.new(:queue, :job) do
         def acknowledge
           # nothing to do
@@ -34,8 +39,15 @@ module Sidekiq
       end
 
       def retrieve_work
-        work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
+        work = @queues.detect{ |q| job = zpopmin(q); break [q,job] if job }
         UnitOfWork.new(*work) if work
+      end
+
+      def zpopmin(queue)
+        Sidekiq.redis do |con|
+          @script_sha ||= con.script(:load, Sidekiq::PriorityFetch::Scripts::ZPOPMIN)
+          con.evalsha(@script_sha, [queue])
+        end
       end
 
       # Creating the Redis#brpop command takes into account any

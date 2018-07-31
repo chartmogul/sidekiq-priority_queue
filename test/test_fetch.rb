@@ -7,7 +7,7 @@ class TestFetcher < Sidekiq::Test
       Sidekiq.redis = { :url => REDIS_URL }
       Sidekiq.redis do |conn|
         conn.flushdb
-        conn.rpush('queue:basic', 'msg')
+        conn.zadd('queue:priority', 0, 'msg')
       end
     end
 
@@ -16,12 +16,12 @@ class TestFetcher < Sidekiq::Test
     end
 
     it 'retrieves' do
-      fetch = Sidekiq::PriorityFetch::PriorityFetch.new(:queues => ['basic', 'bar'])
+      fetch = Sidekiq::PriorityFetch::PriorityFetch.new(:queues => ['priority'])
       uow = fetch.retrieve_work
       refute_nil uow
-      assert_equal 'basic', uow.queue_name
+      assert_equal 'priority', uow.queue_name
       assert_equal 'msg', uow.job
-      q = Sidekiq::Queue.new('basic')
+      q = Sidekiq::Queue.new('priority')
       assert_equal 0, q.size
       uow.requeue
       assert_equal 1, q.size
