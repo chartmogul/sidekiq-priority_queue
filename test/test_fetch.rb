@@ -31,12 +31,12 @@ class TestFetcher < Sidekiq::Test
     it 'retrieves with strict setting' do
       fetch = Sidekiq::Priority::Fetch.new(:queues => ['basic', 'bar', 'bar'], :strict => true)
       cmd = fetch.queues_cmd
-      assert_equal cmd, ['queue:basic', 'queue:bar', Sidekiq::Priority::Fetch::TIMEOUT]
+      assert_equal cmd, ['priority-queue:basic', 'priority-queue:bar', Sidekiq::Priority::Fetch::TIMEOUT]
     end
 
     it 'bulk requeues' do
-      q1 = Sidekiq::Queue.new('foo')
-      q2 = Sidekiq::Queue.new('bar')
+      q1 = Sidekiq::Priority::Queue.new('foo')
+      q2 = Sidekiq::Priority::Queue.new('bar')
       assert_equal 0, q1.size
       assert_equal 0, q2.size
       uow = Sidekiq::Priority::Fetch::UnitOfWork
