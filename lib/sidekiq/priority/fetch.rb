@@ -81,7 +81,7 @@ module Sidekiq
         Sidekiq.redis do |conn|
           conn.pipelined do
             jobs_to_requeue.each do |queue, jobs|
-              conn.rpush("queue:#{queue}", jobs)
+              conn.zadd("priority-queue:#{queue}", jobs.map{|j| [0,j] })
             end
           end
         end

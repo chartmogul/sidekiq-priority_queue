@@ -37,11 +37,11 @@ class TestFetcher < Sidekiq::Test
     it 'bulk requeues' do
       q1 = Sidekiq::Priority::Queue.new('foo')
       q2 = Sidekiq::Priority::Queue.new('bar')
-      assert_equal 0, q1.size
+      assert_equal 1, q1.size
       assert_equal 0, q2.size
       uow = Sidekiq::Priority::Fetch::UnitOfWork
       Sidekiq::Priority::Fetch.bulk_requeue([uow.new('fuzzy:queue:foo', 'bob'), uow.new('fuzzy:queue:foo', 'bar'), uow.new('fuzzy:queue:bar', 'widget')], {:queues => []})
-      assert_equal 2, q1.size
+      assert_equal 3, q1.size
       assert_equal 1, q2.size
     end
 
