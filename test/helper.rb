@@ -38,7 +38,7 @@ require 'minitest/autorun'
 
 require 'sidekiq'
 require 'sidekiq/api'
-require 'sidekiq/priority_fetch'
+require 'sidekiq/priority'
 Sidekiq.logger.level = Logger::ERROR
 
 Sidekiq::Test = Minitest::Test

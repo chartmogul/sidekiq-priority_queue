@@ -1,5 +1,8 @@
+# frozen_string_literal: true
+
+
 module Sidekiq
-  module PriorityFetch
+  module Priority
     module Scripts
 
       ZPOPMIN = %q(

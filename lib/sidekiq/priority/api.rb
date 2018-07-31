@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Sidekiq
-  module PriorityFetch
+  module Priority
     class Queue
       def initialize(name="default")
         @name = name

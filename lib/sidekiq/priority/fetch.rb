@@ -2,13 +2,13 @@
 require 'sidekiq'
 
 module Sidekiq
-  module PriorityFetch
+  module Priority
 
     ##
     # Provides priority queue processing via a Redis script emulating ZPOPMIN
     #
 
-    class PriorityFetch
+    class Fetch
       #TODO what meaning does timeout have when using lua scripts? none?
       TIMEOUT = 2
 
@@ -45,7 +45,7 @@ module Sidekiq
 
       def zpopmin(queue)
         Sidekiq.redis do |con|
-          @script_sha ||= con.script(:load, Sidekiq::PriorityFetch::Scripts::ZPOPMIN)
+          @script_sha ||= con.script(:load, Sidekiq::Priority::Scripts::ZPOPMIN)
           con.evalsha(@script_sha, [queue])
         end
       end
