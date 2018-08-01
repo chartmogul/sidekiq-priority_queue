@@ -54,7 +54,7 @@ end
 
 Sidekiq.configure_client do |config|
   config.client_middleware do |chain|
-    chain.add Sidekiq::Priority::Push
+    chain.add Sidekiq::Priority::Client
   end
 end
 

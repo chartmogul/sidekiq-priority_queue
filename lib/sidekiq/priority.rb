@@ -2,7 +2,7 @@
 
 require 'sidekiq'
 require 'sidekiq/priority/fetch'
-require 'sidekiq/priority/push'
+require 'sidekiq/priority/client'
 require 'sidekiq/priority/scripts'
 require 'sidekiq/priority/api'
 
