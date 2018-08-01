@@ -51,6 +51,13 @@ Sidekiq.configure_client do |config|
   config.redis = { :url => REDIS_URL }
 end
 
+
+Sidekiq.configure_client do |config|
+  config.client_middleware do |chain|
+    chain.add Sidekiq::Priority::Push
+  end
+end
+
 def capture_logging(lvl=Logger::INFO)
   old = Sidekiq.logger
   begin
