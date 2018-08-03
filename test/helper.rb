@@ -37,6 +37,7 @@ end
 require 'minitest/autorun'
 
 require 'sidekiq'
+require 'sidekiq/api'
 require 'sidekiq/priority'
 Sidekiq.logger.level = Logger::ERROR
 

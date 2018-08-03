@@ -4,10 +4,10 @@ module Sidekiq
 
       #inserted into Sidekiq's Client as middleware
       def call(worker_class, item, queue, redis_pool)
-        if item['prioritized_by']
+        if item['priority']
           Sidekiq.redis do |conn|
             queue = "priority-queue:#{queue}"
-            conn.zadd(queue, 0, item.to_json)
+            conn.zadd(queue, item['priority'], item.to_json)
             return item
           end
         else
