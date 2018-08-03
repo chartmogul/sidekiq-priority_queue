@@ -6,10 +6,10 @@ module Sidekiq
       def initialize(name="default")
         @name = name
         @rname = "priority-queue:#{name}"
+      end
 
-        def size
-          Sidekiq.redis { |con| con.zcard(@rname) }
-        end
+      def size
+        Sidekiq.redis { |con| con.zcard(@rname) }
       end
     end
   end
