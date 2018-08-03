@@ -1,7 +1,7 @@
 sudo apt-get -y update
 sudo apt-get -y upgrade
 
-sudo apt-get -y install redis-server ruby-dev
+sudo apt-get -y install redis-server ruby-dev build-essential
 
 cd /vagrant
 sudo gem install bundler
