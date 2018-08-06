@@ -7,8 +7,9 @@ module Sidekiq
         if item['priority']
           zadd(queue, item['priority'], item)
         elsif item['prioritized_by']
-          prioritization_key = item['prioritized_by'].call(item['args'])
+          prioritization_key = Object.const_get(worker_class).prioritization_key(item['args'])
           priority = fetch_and_add(queue, prioritization_key, item)
+          item['prioritization_key'] = prioritization_key
           zadd(queue, priority, item)
         else
           # continue pushing the normal Sidekiq way

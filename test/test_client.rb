@@ -25,7 +25,9 @@ class TestClient < Sidekiq::Test
     class PrioritizedWorker
       include Sidekiq::Worker
 
-      sidekiq_options prioritized_by: Proc.new { |args| args[0] }
+      def self.prioritization_key(foo,bar,foobar)
+        return foo
+      end
     end
 
     it 'prioritises based on already enqueued jobs for the same key' do
@@ -37,6 +39,8 @@ class TestClient < Sidekiq::Test
       job_count_p2 = Sidekiq.redis {|c| c.zcount('priority-queue:default', 2, 2) }
       assert_equal 1, job_count_p1
       assert_equal 1, job_count_p2
+      job, _ = Sidekiq.redis {|c| c.zrevrange('priority-queue:default', 1, 1) }
+      assert_equal 1, JSON.parse(job)['prioritization_key']
     end
   end
 end
