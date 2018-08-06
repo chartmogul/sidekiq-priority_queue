@@ -25,7 +25,7 @@ class TestClient < Sidekiq::Test
     class PrioritizedWorker
       include Sidekiq::Worker
 
-      sidekiq_options prioritized_by: 0
+      sidekiq_options prioritized_by: Proc.new { |args| args[0] }
     end
 
     it 'prioritises based on already enqueued jobs for the same key' do
