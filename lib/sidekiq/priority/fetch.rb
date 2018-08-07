@@ -15,7 +15,13 @@ module Sidekiq
       #TODO should we include the priority here for bulk_requeue? probably...
       UnitOfWork = Struct.new(:queue, :job) do
         def acknowledge
-          # nothing to do
+          Sidekiq.redis do |conn|
+            parsed_job = JSON.parse(job)
+            unless parsed_job['subqueue'].nil?
+              count = conn.zincrby("priority-queue-counts:#{queue_name}", -1, parsed_job['subqueue'])
+              conn.zrem("priority-queue-counts:#{queue_name}", parsed_job['subqueue']) if count < 1
+            end
+          end
         end
 
         def queue_name
