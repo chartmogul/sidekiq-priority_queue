@@ -27,9 +27,9 @@ module Sidekiq
         end
       end
 
-      def fetch_and_add(queue, prioritization_key, item)
+      def fetch_and_add(queue, subqueue, item)
         Sidekiq.redis do |conn|
-          priority = conn.zincrby("priority-queue-counts:#{queue}", 1, prioritization_key)
+          priority = conn.zincrby("priority-queue-counts:#{queue}", 1, subqueue)
         end
       end
     end

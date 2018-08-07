@@ -17,9 +17,9 @@ module Sidekiq
         def acknowledge
           Sidekiq.redis do |conn|
             parsed_job = JSON.parse(job)
-            unless parsed_job['prioritization_key'].nil?
-              count = conn.zincrby("priority-queue-counts:#{queue_name}", -1, parsed_job['prioritization_key'])
-              conn.zrem("priority-queue-counts:#{queue_name}", parsed_job['prioritization_key']) if count < 1
+            unless parsed_job['subqueue'].nil?
+              count = conn.zincrby("priority-queue-counts:#{queue_name}", -1, parsed_job['subqueue'])
+              conn.zrem("priority-queue-counts:#{queue_name}", parsed_job['subqueue']) if count < 1
             end
           end
         end

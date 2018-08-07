@@ -3,14 +3,14 @@ require_relative 'helper'
 
 class TestFetcher < Sidekiq::Test
   describe 'fetcher' do
-    job = {'jid' => 'blah', 'args' => [1,2,3], 'prioritization_key' => 1 }
+    job = {'jid' => 'blah', 'args' => [1,2,3], 'subqueue' => 1 }
 
     before do
       Sidekiq.redis = { :url => REDIS_URL }
       Sidekiq.redis do |conn|
         conn.flushdb
         conn.zadd('priority-queue:foo', 0, job.to_json)
-        conn.zadd("priority-queue-counts:foo", 1, job['prioritization_key'])
+        conn.zadd("priority-queue-counts:foo", 1, job['subqueue'])
       end
     end
 
@@ -30,7 +30,7 @@ class TestFetcher < Sidekiq::Test
       assert_equal 1, q.size
       assert uow.acknowledge
       Sidekiq.redis do |conn|
-        assert_nil conn.zscore("priority-queue-counts:foo", job['prioritization_key'])
+        assert_nil conn.zscore("priority-queue-counts:foo", job['subqueue'])
       end
     end
 
