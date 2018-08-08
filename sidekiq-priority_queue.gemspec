@@ -7,6 +7,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Jacob Matthews"]
   s.email       = 'jake@chartmogul.com'
   s.files       = ["lib/sidekiq/priority.rb"]
+  s.require_paths = ['lib']
   s.homepage    =
     'https://github.com/chartmogul/sidekiq-priority_queue'
   s.license       = 'MIT'
