@@ -1,5 +1,5 @@
 Gem::Specification.new do |s|
-  s.name        = 'sidekiq-priority'
+  s.name        = 'sidekiq-priority_queue'
   s.version     = '0.0.0'
   s.date        = '2018-07-31'
   s.summary     = "Priority Queuing for Sidekiq"
@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.email       = 'jake@chartmogul.com'
   s.files       = ["lib/sidekiq/priority.rb"]
   s.homepage    =
-    'https://github.com/chartmogul/sidekiq-priority'
+    'https://github.com/chartmogul/sidekiq-priority_queue'
   s.license       = 'MIT'
 
   s.add_dependency 'sidekiq', '>= 4'
