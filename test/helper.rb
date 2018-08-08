@@ -38,7 +38,7 @@ require 'minitest/autorun'
 
 require 'sidekiq'
 require 'sidekiq/api'
-require 'sidekiq/priority'
+require 'sidekiq/priority_queue'
 Sidekiq.logger.level = Logger::ERROR
 
 Sidekiq::Test = Minitest::Test
@@ -54,7 +54,7 @@ end
 
 Sidekiq.configure_client do |config|
   config.client_middleware do |chain|
-    chain.add Sidekiq::Priority::Client
+    chain.add Sidekiq::PriorityQueue::Client
   end
 end
 
