@@ -6,7 +6,7 @@ module Sidekiq
     module Scripts
 
       ZPOPMIN = %q(
-        local resp = redis.call('zrevrange', KEYS[1], '0', '0')
+        local resp = redis.call('zrange', KEYS[1], '0', '0')
         if (resp[1] ~= nil) then
           local val = resp[# resp]
           redis.call('zrem', KEYS[1], val)
@@ -17,7 +17,7 @@ module Sidekiq
       )
 
       ZPOPMIN_SADD = %q(
-        local resp = redis.call('zrevrange', KEYS[1], '0', '0')
+        local resp = redis.call('zrange', KEYS[1], '0', '0')
         if (resp[1] ~= nil) then
           local val = resp[# resp]
           redis.call('zrem', KEYS[1], val)
