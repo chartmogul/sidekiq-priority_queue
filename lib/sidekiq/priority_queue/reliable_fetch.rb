@@ -2,13 +2,14 @@
 require 'sidekiq'
 
 module Sidekiq
-  module Priority
-    class Fetch
+  module PriorityQueue
+    class ReliableFetch
 
       UnitOfWork = Struct.new(:queue, :job) do
         def acknowledge
           Sidekiq.redis do |conn|
             parsed_job = JSON.parse(job)
+            conn.srem("#{queue}_#{Socket.gethostname}", job)
             unless parsed_job['subqueue'].nil?
               count = conn.zincrby("priority-queue-counts:#{queue_name}", -1, parsed_job['subqueue'])
               conn.zrem("priority-queue-counts:#{queue_name}", parsed_job['subqueue']) if count < 1
@@ -21,9 +22,7 @@ module Sidekiq
         end
 
         def requeue
-          Sidekiq.redis do |conn|
-            conn.zadd("priority-queue:#{queue_name}", 0, job)
-          end
+          # Nothing needed. Jobs are in private queue.
         end
       end
 
@@ -34,15 +33,28 @@ module Sidekiq
       end
 
       def retrieve_work
-        work = @queues.detect{ |q| job = zpopmin(q); break [q,job] if job }
+        work = @queues.detect do |q|
+          job = spop(wip_queue_name(q))
+          break [q,job] if job
+          job = zpopmin_sadd(q, wip_queue_name(q));
+          break [q,job] if job
+        end
         UnitOfWork.new(*work) if work
       end
 
-      def zpopmin(queue)
+      def wip_queue_name(q)
+        "#{q}_#{Socket.gethostname}"
+      end
+
+      def zpopmin_sadd(queue, wip_queue)
         Sidekiq.redis do |con|
-          @script_sha ||= con.script(:load, Sidekiq::Priority::Scripts::ZPOPMIN)
-          con.evalsha(@script_sha, [queue])
+          @script_sha ||= con.script(:load, Sidekiq::PriorityQueue::Scripts::ZPOPMIN_SADD)
+          con.evalsha(@script_sha, [queue, wip_queue])
         end
+      end
+
+      def spop(wip_queue)
+        Sidekiq.redis{ |con| con.spop(wip_queue) }
       end
 
       def queues_cmd

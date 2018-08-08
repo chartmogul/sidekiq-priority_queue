@@ -19,7 +19,7 @@ class TestFetcher < Sidekiq::Test
     end
 
     it 'retrieves and puts into private set' do
-      fetch = Sidekiq::Priority::ReliableFetch.new(:queues => ['foo'])
+      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(:queues => ['foo'])
       uow = fetch.retrieve_work
       refute_nil uow
       assert_equal 'foo', uow.queue_name
@@ -27,7 +27,7 @@ class TestFetcher < Sidekiq::Test
       Sidekiq.redis do |conn|
         assert conn.sismember("priority-queue:foo_#{Socket.gethostname}", job.to_json)
       end
-      q = Sidekiq::Priority::Queue.new('foo')
+      q = Sidekiq::PriorityQueue::Queue.new('foo')
       assert_equal 0, q.size
       assert uow.acknowledge
       Sidekiq.redis do |conn|
@@ -41,7 +41,7 @@ class TestFetcher < Sidekiq::Test
       Sidekiq.redis do |conn|
         conn.sadd("priority-queue:foo_#{Socket.gethostname}", killed_job.to_json)
       end
-      fetch = Sidekiq::Priority::ReliableFetch.new(:queues => ['foo'])
+      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(:queues => ['foo'])
       uow = fetch.retrieve_work
       refute_nil uow
       assert_equal 'foo', uow.queue_name
@@ -49,18 +49,18 @@ class TestFetcher < Sidekiq::Test
     end
 
     it 'retrieves with strict setting' do
-      fetch = Sidekiq::Priority::ReliableFetch.new(:queues => ['basic', 'bar', 'bar'], :strict => true)
+      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(:queues => ['basic', 'bar', 'bar'], :strict => true)
       cmd = fetch.queues_cmd
       assert_equal cmd, ['priority-queue:basic', 'priority-queue:bar']
     end
 
     it 'bulk requeues' do
-      q1 = Sidekiq::Priority::Queue.new('foo')
-      q2 = Sidekiq::Priority::Queue.new('bar')
+      q1 = Sidekiq::PriorityQueue::Queue.new('foo')
+      q2 = Sidekiq::PriorityQueue::Queue.new('bar')
       assert_equal 1, q1.size
       assert_equal 0, q2.size
-      uow = Sidekiq::Priority::Fetch::UnitOfWork
-      Sidekiq::Priority::ReliableFetch.bulk_requeue([uow.new('fuzzy:queue:foo', 'bob'), uow.new('fuzzy:queue:foo', 'bar'), uow.new('fuzzy:queue:bar', 'widget')], {:queues => []})
+      uow = Sidekiq::PriorityQueue::Fetch::UnitOfWork
+      Sidekiq::PriorityQueue::ReliableFetch.bulk_requeue([uow.new('fuzzy:queue:foo', 'bob'), uow.new('fuzzy:queue:foo', 'bar'), uow.new('fuzzy:queue:bar', 'widget')], {:queues => []})
       assert_equal 3, q1.size
       assert_equal 1, q2.size
     end

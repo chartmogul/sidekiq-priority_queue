@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sidekiq-priority (0.0.0)
+    sidekiq-priority_queue (0.0.0)
       sidekiq (>= 4)
 
 GEM
@@ -34,7 +34,7 @@ PLATFORMS
 DEPENDENCIES
   minitest
   rake
-  sidekiq-priority!
+  sidekiq-priority_queue!
   simplecov
 
 BUNDLED WITH

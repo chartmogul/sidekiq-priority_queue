@@ -2,7 +2,7 @@
 
 
 module Sidekiq
-  module Priority
+  module PriorityQueue
     module Scripts
 
       ZPOPMIN = %q(

@@ -1,5 +1,5 @@
 module Sidekiq
-  module Priority
+  module PriorityQueue
     class Client
 
       #inserted into Sidekiq's Client as middleware
