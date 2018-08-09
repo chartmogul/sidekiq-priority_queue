@@ -1,11 +1,33 @@
-# sidekiq-priority_queue
+Sidekiq Priority Queue
+==============
+Extends Sidekiq with support for queuing jobs with a fine grained priority and emulating multiple queues using a single Redis sorted set, ideal for multi-tennant applications.
 
-## Installation
+The standard Sidekiq setup offers fantastic performance using Redis lists but only offers strict FIFO queues, which can be hugely problematic when they processes slowly and one users may need to wait hours behind another users jobs.
 
+Sidekiq Priority Queue offers a pluggable solution retaining the simplicity and performance of Sidekiq. The priority queue is a building block for emulating sub-queues (per tenannt or user) by de-prioritising jobs according to how many jobs are already in this sub-queue. 
+
+Installation
+-----------------
+
+    gem install sidekiq
+
+Configuration
+-----------------   
+```
+Sidekiq.configure_server do |config|
+    config.options[:fetch] = Sidekiq::PriorityQueue::Fetch
+end
+
+Sidekiq.configure_client do |config|
+    config.client_middleware do |chain|
+        chain.add Sidekiq::PriorityQueue::Client
+    end
+end
+```
+
+Development
+-----------------
 - Install [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and [Vagrant](https://www.vagrantup.com/downloads.html)
 - Start Vagrant with `vagrant up && vagrant ssh`
 - Run `bundle install`
-
-## Running Specs
-
-You can run the specs with `bundle exec rake`.
+- Run the tests with `bundle exec rake`
