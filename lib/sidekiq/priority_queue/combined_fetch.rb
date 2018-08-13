@@ -24,6 +24,10 @@ module Sidekiq
       def self.add(fetch)
         @@fetches << fetch
       end
+      
+      def self.bulk_requeue(inprogress, options)
+        Sidekiq::BasicFetch.bulk_reque(inprogress, options)
+      end
     end
   end
 end
