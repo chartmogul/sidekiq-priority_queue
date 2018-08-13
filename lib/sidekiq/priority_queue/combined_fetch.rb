@@ -3,17 +3,9 @@
 module Sidekiq
   module PriorityQueue
     class CombinedFetch
-      def initialize(&block)
-        @fetches = []
-        yield self
-      end
 
-      def add(fetch)
-        @fetches << fetch
-      end
-      
-      def new(options)
-        self
+      def initialize(options)
+        @fetches = @@fetches.map{ |f| f.new(options) }
       end
 
       def retrieve_work
@@ -21,6 +13,16 @@ module Sidekiq
           work = fetch.retrieve_work
           return work if work
         end
+      end
+
+      def self.configure(&block)
+        @@fetches = []
+        yield self
+        self
+      end
+
+      def self.add(fetch)
+        @@fetches << fetch
       end
     end
   end

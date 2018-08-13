@@ -22,10 +22,12 @@ class TestFetcher < Sidekiq::Test
     end
 
     it 'retrieves from both normal and priority queues' do
-      fetch = Sidekiq::PriorityQueue::CombinedFetch.new do |fetches|
-        fetches.add Sidekiq::BasicFetch.new(:queues => ['foo'])
-        fetches.add Sidekiq::PriorityQueue::Fetch.new(:queues => ['foo'])
+      fetch = Sidekiq::PriorityQueue::CombinedFetch.configure do |fetches|
+        fetches.add Sidekiq::BasicFetch
+        fetches.add Sidekiq::PriorityQueue::Fetch
       end
+
+      fetch = fetch.new(:queues => ['foo'])
 
       uow = fetch.retrieve_work
       refute_nil uow
