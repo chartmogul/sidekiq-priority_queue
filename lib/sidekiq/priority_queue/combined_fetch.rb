@@ -11,6 +11,10 @@ module Sidekiq
       def add(fetch)
         @fetches << fetch
       end
+      
+      def new(options)
+        self
+      end
 
       def retrieve_work
         @fetches.each do |fetch|
