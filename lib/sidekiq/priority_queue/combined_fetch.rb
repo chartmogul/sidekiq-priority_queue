@@ -26,7 +26,7 @@ module Sidekiq
       end
       
       def self.bulk_requeue(inprogress, options)
-        Sidekiq::BasicFetch.bulk_reque(inprogress, options)
+        Sidekiq::BasicFetch.bulk_requeue(inprogress, options)
       end
     end
   end
