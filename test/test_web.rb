@@ -42,5 +42,12 @@ class TestWeb < Sidekiq::Test
       assert_equal 200, last_response.status
       assert_match(/FakeWorker/, last_response.body)
     end
+
+    it 'can delete job' do
+      post '/priority_queues/default/delete', key_val: job.to_json
+      assert_equal 302, last_response.status
+      assert_equal 0, Sidekiq::PriorityQueue::Queue.new('default').size
+    end
+
   end
 end

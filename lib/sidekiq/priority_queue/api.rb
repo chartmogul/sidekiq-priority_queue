@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require 'sidekiq/api'
+
 
 module Sidekiq
   module PriorityQueue
@@ -35,6 +37,15 @@ module Sidekiq
           .map{ |key| key.gsub('priority-queue:', '') }
           .sort
           .map { |q| Queue.new(q) }
+      end
+    end
+
+    class Job < Sidekiq::Job
+      def delete
+        count = Sidekiq.redis do |conn|
+          conn.zrem("priority-queue:#{@queue}", @value)
+        end
+        count != 0
       end
     end
   end

@@ -2,10 +2,12 @@ require 'sidekiq/web'
 
 module Sidekiq::PriorityQueue
   module Web
+
     ROOT = File.expand_path('../web', __FILE__)
 
     def self.registered(app)
       app.tabs['Priority Queues'] = 'priority_queues'
+      
       app.get '/priority_queues' do
         @queues = Queue.all
         render(:erb, File.read("#{ROOT}/views/priority_queues.erb"))
@@ -21,6 +23,13 @@ module Sidekiq::PriorityQueue
         @messages = @messages.map { |msg| Sidekiq::Job.new(msg.first, @name) }
         render(:erb, File.read("#{ROOT}/views/priority_queue.erb"))
       end
+
+      app.post "/priority_queues/:name/delete" do
+        name = route_params[:name]
+        Job.new(params['key_val'], name).delete
+        redirect_with_query("#{root_path}priority_queues/#{CGI.escape(name)}")
+      end
+
     end
   end  
 end
