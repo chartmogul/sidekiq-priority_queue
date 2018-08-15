@@ -12,9 +12,6 @@
       <tr>
         <td>
           <a href="<%= root_path %>queues/<%= CGI.escape(queue.name) %>"><%= h queue.name %></a>
-          <% if queue.paused? %>
-            <span class="label label-danger"><%= t('Paused') %></span>
-          <% end %>
         </td>
         <td><%# number_with_delimiter(queue.size) %> </td>
         <td><%# number_with_delimiter(queue.latency.round(2)) %> </td>

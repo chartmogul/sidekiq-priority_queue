@@ -7,7 +7,7 @@ module Sidekiq::PriorityQueue
     def self.registered(app)
       app.tabs['Priority Queues'] = 'priority_queues'
       app.get '/priority_queues' do
-        @queues = []
+        @queues = Queue.all
         render(:erb, File.read("#{ROOT}/views/priority_queues.erb"))
       end
     end
