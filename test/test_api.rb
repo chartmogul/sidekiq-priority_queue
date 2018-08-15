@@ -15,6 +15,7 @@ class TestApi < Sidekiq::Test
 
     it 'works' do
       assert_equal 1, Sidekiq::PriorityQueue::Queue.all.size
+      assert_equal 1, Sidekiq::PriorityQueue::Queue.all.first.size
     end
 
   end

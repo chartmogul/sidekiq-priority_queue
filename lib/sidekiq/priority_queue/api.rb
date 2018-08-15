@@ -31,7 +31,10 @@ module Sidekiq
       end
 
       def self.all
-        Sidekiq.redis { |con| redis_scan(con, 'priority-queue:*') }.sort.map { |q| Queue.new(q) }
+         Sidekiq.redis { |con| redis_scan(con, 'priority-queue:*') }
+          .map{ |key| key.gsub('priority-queue:', '') }
+          .sort
+          .map { |q| Queue.new(q) }
       end
     end
   end
