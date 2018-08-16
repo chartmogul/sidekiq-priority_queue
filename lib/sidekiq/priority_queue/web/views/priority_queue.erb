@@ -15,6 +15,8 @@
     <thead>
       <th><%= t('Job') %></th>
       <th><%= t('Arguments') %></th>
+      <th><%= t('Priority') %></th>
+      <th><%= t('Subqueue') %></th>
       <th></th>
     </thead>
     <% @messages.each_with_index do |msg, index| %>
@@ -30,6 +32,8 @@
             <%= display_args(msg.display_args) %>
           <% end %>
         </td>
+        <td><%= msg.priority %></td>
+        <td><%= msg.subqueue %></td>
         <td>
           <form action="<%= root_path %>priority_queues/<%= CGI.escape(@name) %>/delete" method="post">
             <%= csrf_tag %>

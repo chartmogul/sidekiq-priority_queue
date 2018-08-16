@@ -23,7 +23,7 @@ module Sidekiq
 
       attr_reader :name
 
-      def initialize(name="default")
+      def initialize(name='default')
         @name = name
         @rname = "priority-queue:#{name}"
       end
@@ -41,6 +41,19 @@ module Sidekiq
     end
 
     class Job < Sidekiq::Job
+
+      attr_reader :priority
+      attr_reader :subqueue
+      
+      def initialize(item, queue_name = nil, priority = nil)
+        @args = nil
+        @value = item
+        @item = item.is_a?(Hash) ? item : parse(item)
+        @queue = queue_name || @item['queue']
+        @subqueue = @item['subqueue']
+        @priority = priority
+      end
+
       def delete
         count = Sidekiq.redis do |conn|
           conn.zrem("priority-queue:#{@queue}", @value)

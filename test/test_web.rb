@@ -21,13 +21,14 @@ class TestWeb < Sidekiq::Test
     end
 
     job = { 'jid' => 'blah', 'class' => 'FakeWorker', 'args' => [1,2,3], 'subqueue' => 1 }
+    job_2 = { 'jid' => 'blahah', 'class' => 'FakeWorkerDef', 'args' => [1,2,3,4], 'subqueue' => 1 }
 
     before do
       Sidekiq.redis = { :url => REDIS_URL }
       Sidekiq.redis do |conn| 
         conn.flushdb
         conn.zadd('priority-queue:default', 0, job.to_json)
-        conn.zadd("priority-queue-counts:default", 1, job['subqueue'])
+        conn.zadd("priority-queue-counts:default", 2, job_2['subqueue'])
       end
     end
 
