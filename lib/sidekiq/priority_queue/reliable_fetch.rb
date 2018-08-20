@@ -30,6 +30,7 @@ module Sidekiq
         @strictly_ordered_queues = !!options[:strict]
         @queues = options[:queues].map { |q| "priority-queue:#{q}" }
         @queues = @queues.uniq if @strictly_ordered_queues
+        @process_index = options[:index]
       end
 
       def retrieve_work
@@ -43,7 +44,7 @@ module Sidekiq
       end
 
       def wip_queue_name(q)
-        "#{q}_#{Socket.gethostname}"
+        "#{q}_#{Socket.gethostname}_#{@process_index}"
       end
 
       def zpopmin_sadd(queue, wip_queue)
