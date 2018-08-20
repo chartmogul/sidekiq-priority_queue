@@ -26,7 +26,8 @@ module Sidekiq
       end
       
       def self.bulk_requeue(inprogress, options)
-        Sidekiq::BasicFetch.bulk_reque(inprogress, options)
+        # ReliableFetch#bulk_equeue ignores inprogress, so it's safe to call both
+        @@fetches.each{|f| f.bulk_requeue(inprogress, options) }
       end
     end
   end

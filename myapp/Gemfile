@@ -1,0 +1,9 @@
+source 'https://rubygems.org'
+
+gem 'sidekiq-priority_queue', :path => '..'
+gem 'rails', '~> 5.2.0'
+gem 'puma'
+
+platforms :ruby do
+  gem 'sqlite3'
+end
