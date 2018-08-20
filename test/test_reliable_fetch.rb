@@ -19,29 +19,29 @@ class TestFetcher < Sidekiq::Test
     end
 
     it 'retrieves and puts into private set' do
-      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(:queues => ['foo'])
+      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(queues: ['foo'], index: 0)
       uow = fetch.retrieve_work
       refute_nil uow
       assert_equal 'foo', uow.queue_name
       assert_equal job.to_json, uow.job
       Sidekiq.redis do |conn|
-        assert conn.sismember("priority-queue:foo_#{Socket.gethostname}", job.to_json)
+        assert conn.sismember("priority-queue:foo_#{Socket.gethostname}_0", job.to_json)
       end
       q = Sidekiq::PriorityQueue::Queue.new('foo')
       assert_equal 0, q.size
       assert uow.acknowledge
       Sidekiq.redis do |conn|
         assert_nil conn.zscore("priority-queue-counts:foo", job['subqueue'])
-        assert  !conn.sismember("priority-queue:foo_#{Socket.gethostname}", job.to_json)
+        assert !conn.sismember("priority-queue:foo_#{Socket.gethostname}_0", job.to_json)
       end
     end
 
     it 'resumes WIP jobs first' do
       killed_job = {'jid' => 'blah_blah', 'args' => [1,2,3], 'subqueue' => 1 }
       Sidekiq.redis do |conn|
-        conn.sadd("priority-queue:foo_#{Socket.gethostname}", killed_job.to_json)
+        conn.sadd("priority-queue:foo_#{Socket.gethostname}_0", killed_job.to_json)
       end
-      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(:queues => ['foo'])
+      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(queues: ['foo'], index: 0)
       uow = fetch.retrieve_work
       refute_nil uow
       assert_equal 'foo', uow.queue_name

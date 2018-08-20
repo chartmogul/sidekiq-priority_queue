@@ -5,14 +5,15 @@ module Sidekiq
   module PriorityQueue
     class ReliableFetch
 
-      UnitOfWork = Struct.new(:queue, :job) do
+      UnitOfWork = Struct.new(:queue, :job, :private_queue) do
         def acknowledge
           Sidekiq.redis do |conn|
             parsed_job = JSON.parse(job)
-            conn.srem("#{queue}_#{Socket.gethostname}", job)
+            conn.srem(private_queue, job)
             unless parsed_job['subqueue'].nil?
-              count = conn.zincrby("priority-queue-counts:#{queue_name}", -1, parsed_job['subqueue'])
-              conn.zrem("priority-queue-counts:#{queue_name}", parsed_job['subqueue']) if count < 1
+              job_counts = "priority-queue-counts:#{queue_name}"
+              count = conn.zincrby(job_counts, -1, parsed_job['subqueue'])
+              conn.zrem(job_counts, parsed_job['subqueue']) if count < 1
             end
           end
         end
@@ -30,6 +31,7 @@ module Sidekiq
         @strictly_ordered_queues = !!options[:strict]
         @queues = options[:queues].map { |q| "priority-queue:#{q}" }
         @queues = @queues.uniq if @strictly_ordered_queues
+        @process_index = options[:index]
       end
 
       def retrieve_work
@@ -39,11 +41,11 @@ module Sidekiq
           job = zpopmin_sadd(q, wip_queue_name(q));
           break [q,job] if job
         end
-        UnitOfWork.new(*work) if work
+        UnitOfWork.new(*work, wip_queue_name(work.first)) if work
       end
 
       def wip_queue_name(q)
-        "#{q}_#{Socket.gethostname}"
+        "#{q}_#{Socket.gethostname}_#{@process_index}"
       end
 
       def zpopmin_sadd(queue, wip_queue)
