@@ -92,9 +92,9 @@ module Sidekiq
             end
           end
         end
-        Sidekiq.logger.info("Pushed #{jobs_to_requeue.size} jobs back to Redis")
+        Sidekiq.logger.info("Pushed #{ jobs_to_requeue.map{|q| q.size }.sum } jobs back to Redis")
       rescue => ex
-        Sidekiq.logger.warn("Failed to requeue #{jobs_to_requeue.size} jobs: #{ex.message}")
+        Sidekiq.logger.warn("Failed to requeue #{ jobs_to_requeue.map{|q| q.size }.sum } jobs: #{ex.message}")
       end
     end
   end
