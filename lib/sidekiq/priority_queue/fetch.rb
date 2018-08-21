@@ -8,10 +8,9 @@ module Sidekiq
       UnitOfWork = Struct.new(:queue, :job) do
         def acknowledge
           Sidekiq.redis do |conn|
-            parsed_job = JSON.parse(job)
-            unless parsed_job['subqueue'].nil?
-              count = conn.zincrby("priority-queue-counts:#{queue_name}", -1, parsed_job['subqueue'])
-              conn.zrem("priority-queue-counts:#{queue_name}", parsed_job['subqueue']) if count < 1
+            unless subqueue.nil?
+              count = conn.zincrby(subqueue_counts, -1, subqueue)
+              conn.zrem(subqueue_counts, subqueue) if count < 1
             end
           end
         end
@@ -20,9 +19,18 @@ module Sidekiq
           queue.sub(/.*queue:/, '')
         end
 
+        def subqueue
+          @parsed_job ||= JSON.parse(job)
+          @parsed_job['subqueue']
+        end
+
+        def subqueue_counts
+          "priority-queue-counts:#{queue_name}"
+        end
+
         def requeue
           Sidekiq.redis do |conn|
-            conn.zadd("priority-queue:#{queue_name}", 0, job)
+            conn.zadd(queue, 0, job)
           end
         end
       end
@@ -59,14 +67,15 @@ module Sidekiq
         Sidekiq.logger.debug { "Re-queueing terminated jobs" }
         jobs_to_requeue = {}
         inprogress.each do |unit_of_work|
-          jobs_to_requeue[unit_of_work.queue_name] ||= []
-          jobs_to_requeue[unit_of_work.queue_name] << unit_of_work.job
+          next unless unit_of_work.queue.start_with? 'priority-queue'
+          jobs_to_requeue[unit_of_work.queue] ||= []
+          jobs_to_requeue[unit_of_work.queue] << unit_of_work.job
         end
 
         Sidekiq.redis do |conn|
           conn.pipelined do
             jobs_to_requeue.each do |queue, jobs|
-              conn.zadd("priority-queue:#{queue}", jobs.map{|j| [0,j] })
+              conn.zadd(queue, jobs.map{|j| [0,j] })
             end
           end
         end
