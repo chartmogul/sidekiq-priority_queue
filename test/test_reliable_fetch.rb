@@ -54,15 +54,24 @@ class TestFetcher < Sidekiq::Test
       assert_equal cmd, ['priority-queue:basic', 'priority-queue:bar']
     end
 
-    it 'bulk requeues' do
+    it 'bulk requeues only priority-queue jobs' do
       q1 = Sidekiq::PriorityQueue::Queue.new('foo')
       q2 = Sidekiq::PriorityQueue::Queue.new('bar')
       assert_equal 1, q1.size
       assert_equal 0, q2.size
       uow = Sidekiq::PriorityQueue::Fetch::UnitOfWork
-      Sidekiq::PriorityQueue::ReliableFetch.bulk_requeue([uow.new('fuzzy:queue:foo', 'bob'), uow.new('fuzzy:queue:foo', 'bar'), uow.new('fuzzy:queue:bar', 'widget')], {:queues => []})
-      assert_equal 3, q1.size
-      assert_equal 1, q2.size
+
+      Sidekiq.redis do |conn|
+        conn.sadd("priority-queue:foo_#{Socket.gethostname}_0", 'bob')
+      end
+
+      Sidekiq::PriorityQueue::ReliableFetch.bulk_requeue(
+        [ uow.new('priority-queue:foo', 'bob'), uow.new('fuzzy:queue:foo', 'bar') ],
+        { queues: ['foo'], index: 0 }
+      )
+
+      assert_equal 2, q1.size
+      assert_equal 0, q2.size
     end
 
   end

@@ -5,15 +5,13 @@ module Sidekiq
   module PriorityQueue
     class ReliableFetch
 
-      UnitOfWork = Struct.new(:queue, :job, :private_queue) do
+      UnitOfWork = Struct.new(:queue, :job, :wip_queue) do
         def acknowledge
           Sidekiq.redis do |conn|
-            parsed_job = JSON.parse(job)
-            conn.srem(private_queue, job)
-            unless parsed_job['subqueue'].nil?
-              job_counts = "priority-queue-counts:#{queue_name}"
-              count = conn.zincrby(job_counts, -1, parsed_job['subqueue'])
-              conn.zrem(job_counts, parsed_job['subqueue']) if count < 1
+            conn.srem(wip_queue, job)
+            unless subqueue.nil?
+              count = conn.zincrby(subqueue_counts, -1, subqueue)
+              conn.zrem(subqueue_counts, subqueue) if count < 1
             end
           end
         end
@@ -22,8 +20,17 @@ module Sidekiq
           queue.sub(/.*queue:/, '')
         end
 
+        def subqueue
+          @parsed_job ||= JSON.parse(job)
+          @parsed_job['subqueue']
+        end
+
+        def subqueue_counts
+          "priority-queue-counts:#{queue_name}"
+        end
+
         def requeue
-          # Nothing needed. Jobs are in private queue.
+          # Nothing needed. Jobs are in WIP queue.
         end
       end
 
@@ -36,15 +43,15 @@ module Sidekiq
 
       def retrieve_work
         work = @queues.detect do |q|
-          job = spop(wip_queue_name(q))
+          job = spop(wip_queue(q))
           break [q,job] if job
-          job = zpopmin_sadd(q, wip_queue_name(q));
+          job = zpopmin_sadd(q, wip_queue(q));
           break [q,job] if job
         end
-        UnitOfWork.new(*work, wip_queue_name(work.first)) if work
+        UnitOfWork.new(*work, wip_queue(work.first)) if work
       end
 
-      def wip_queue_name(q)
+      def wip_queue(q)
         "#{q}_#{Socket.gethostname}_#{@process_index}"
       end
 
@@ -67,26 +74,27 @@ module Sidekiq
         end
       end
 
-      def self.bulk_requeue(inprogress, options)
-        return if inprogress.empty?
-
-        Sidekiq.logger.debug { "Re-queueing terminated jobs" }
+      def self.bulk_requeue(_inprogress, options)
         jobs_to_requeue = {}
-        inprogress.each do |unit_of_work|
-          jobs_to_requeue[unit_of_work.queue_name] ||= []
-          jobs_to_requeue[unit_of_work.queue_name] << unit_of_work.job
-        end
-
         Sidekiq.redis do |conn|
+          Sidekiq.logger.debug { "Re-queueing terminated jobs" }
+          options[:queues].map { |q| "priority-queue:#{q}" }.each do |q|
+            jobs_to_requeue[q] = []
+            wip_queue = "#{q}_#{Socket.gethostname}_#{options[:index]}"
+            while job = conn.spop(wip_queue) do
+              jobs_to_requeue[q] << job
+            end
+          end
+
           conn.pipelined do
             jobs_to_requeue.each do |queue, jobs|
-              conn.zadd("priority-queue:#{queue}", jobs.map{|j| [0,j] })
+              conn.zadd(queue, jobs.map{|j| [0,j] })
             end
           end
         end
-        Sidekiq.logger.info("Pushed #{inprogress.size} jobs back to Redis")
+        Sidekiq.logger.info("Pushed #{ jobs_to_requeue.map{|q| q.size }.sum } jobs back to Redis")
       rescue => ex
-        Sidekiq.logger.warn("Failed to requeue #{inprogress.size} jobs: #{ex.message}")
+        Sidekiq.logger.warn("Failed to requeue #{ jobs_to_requeue.map{|q| q.size }.sum } jobs: #{ex.message}")
       end
     end
   end

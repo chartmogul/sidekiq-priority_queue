@@ -9,6 +9,7 @@ Gem::Specification.new do |s|
   s.files       = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features|pkg)/}) }
   s.homepage    = 'https://github.com/chartmogul/sidekiq-priority_queue'
   s.license     = 'MIT'
+  s.required_ruby_version = '>= 2.4.0'
 
   s.add_dependency 'sidekiq', '>= 4'
   s.add_development_dependency 'minitest', '~> 5.10', '>= 5.10.1'
