@@ -67,7 +67,6 @@ module Sidekiq
         Sidekiq.logger.debug { "Re-queueing terminated jobs" }
         jobs_to_requeue = {}
         inprogress.each do |unit_of_work|
-          next unless unit_of_work.queue.start_with? 'priority-queue'
           jobs_to_requeue[unit_of_work.queue] ||= []
           jobs_to_requeue[unit_of_work.queue] << unit_of_work.job
         end

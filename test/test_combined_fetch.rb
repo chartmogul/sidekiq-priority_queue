@@ -39,5 +39,30 @@ class TestFetcher < Sidekiq::Test
       assert_equal 'foo', uow.queue_name
       assert_equal priority_job.to_json, uow.job
     end
+
+    it 'bulk requeues all jobs only once' do
+      fetch = Sidekiq::PriorityQueue::CombinedFetch.configure do |fetches|
+        fetches.add Sidekiq::BasicFetch
+        fetches.add Sidekiq::PriorityQueue::Fetch
+      end
+
+      q1 = Sidekiq::PriorityQueue::Queue.new('foo')
+      q2 = Sidekiq::Queue.new('foo')
+      assert_equal 1, q1.size
+      assert_equal 1, q2.size
+      uow = Sidekiq::PriorityQueue::Fetch::UnitOfWork
+
+      Sidekiq.redis do |conn|
+        conn.sadd("priority-queue:foo_#{Socket.gethostname}_0", 'bob')
+      end
+
+      fetch.bulk_requeue(
+        [ uow.new('priority-queue:foo', 'bob'), uow.new('queue:foo', 'bar') ],
+        { queues: ['foo'], index: 0 }
+      )
+
+      assert_equal 2, q1.size
+      assert_equal 2, q2.size
+    end
   end
 end
