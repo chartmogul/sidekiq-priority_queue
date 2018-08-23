@@ -14,12 +14,13 @@ class TestClient < Sidekiq::Test
       assert_equal 1, Sidekiq::Queue.new().size
     end
 
-    it 'pushes to a priority queue' do
+    it 'pushes to a priority queue and not a normal queue' do
       Sidekiq.redis {|c| c.flushdb }
-      assert Worker.set(priority: 1).perform_async(1)
+      assert Worker.set(priority: 0).perform_async(1)
       assert_equal 1, Sidekiq::PriorityQueue::Queue.new().size
-      job_count = Sidekiq.redis {|c| c.zcount('priority-queue:default', 1, 1) }
+      job_count = Sidekiq.redis {|c| c.zcount('priority-queue:default', 0, 0) }
       assert_equal 1, job_count
+      assert_equal 0, Sidekiq::Queue.new().size
     end
 
     class PrioritizedWorker

@@ -6,11 +6,13 @@ module Sidekiq
       def call(worker_class, item, queue, redis_pool)
         if item['priority']
           zadd(queue, item['priority'], item)
+          return item['jid']
         elsif item['subqueue']
           # replace the proc with what it returns
           item['subqueue'] = item['subqueue'].call(item['args'])
           priority = fetch_and_add(queue, item['subqueue'], item)
           zadd(queue, priority, item)
+          return item['jid']
         else
           # continue pushing the normal Sidekiq way
           yield
@@ -32,6 +34,21 @@ module Sidekiq
           priority = conn.zincrby("priority-queue-counts:#{queue}", 1, subqueue)
         end
       end
+    end
+  end
+end
+
+Sidekiq::Client.class_eval do
+  def push(item)
+    normed = normalize_item(item)
+    payload = process_single(item['class'], normed)
+
+    # if payload is a JID because the middleware already pushed then just return the JID
+    return payload if payload.is_a?(String)
+
+    if payload
+      raw_push([payload])
+      payload['jid']
     end
   end
 end
