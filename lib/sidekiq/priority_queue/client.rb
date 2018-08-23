@@ -5,10 +5,12 @@ module Sidekiq
       #inserted into Sidekiq's Client as middleware
       def call(worker_class, item, queue, redis_pool)
         if item['priority']
+          sadd('priority-queues', queue)
           zadd(queue, item['priority'], item)
           return item['jid']
         elsif item['subqueue']
           # replace the proc with what it returns
+          sadd('priority-queues', queue)
           item['subqueue'] = item['subqueue'].call(item['args'])
           priority = fetch_and_add(queue, item['subqueue'], item)
           zadd(queue, priority, item)
@@ -26,6 +28,12 @@ module Sidekiq
           queue = "priority-queue:#{queue}"
           conn.zadd(queue, score, item.to_json)
           return item
+        end
+      end
+
+      def sadd(set, member)
+        Sidekiq.redis do |conn|
+          conn.sadd(set,member)
         end
       end
 

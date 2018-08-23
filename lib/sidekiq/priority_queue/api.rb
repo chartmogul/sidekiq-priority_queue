@@ -4,22 +4,7 @@ require 'sidekiq/api'
 
 module Sidekiq
   module PriorityQueue
-
-    module RedisScanner
-      def redis_scan(conn, pattern)
-        cursor = '0'
-        result = []
-        loop do
-          cursor, values = conn.scan(cursor, match: pattern)
-          result.push(*values)
-          break if cursor == '0'
-        end
-        result
-      end
-    end
-
     class Queue
-      extend PriorityQueue::RedisScanner
 
       attr_reader :name
 
@@ -33,7 +18,7 @@ module Sidekiq
       end
 
       def self.all
-         Sidekiq.redis { |con| redis_scan(con, 'priority-queue:*') }
+         Sidekiq.redis { |con| con.smembers('priority-queues') }
           .map{ |key| key.gsub('priority-queue:', '') }
           .sort
           .map { |q| Queue.new(q) }
@@ -44,7 +29,7 @@ module Sidekiq
 
       attr_reader :priority
       attr_reader :subqueue
-      
+
       def initialize(item, queue_name = nil, priority = nil)
         @args = nil
         @value = item
