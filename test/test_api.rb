@@ -8,6 +8,7 @@ class TestApi < Sidekiq::Test
       Sidekiq.redis = { :url => REDIS_URL }
       Sidekiq.redis do |conn|
         conn.flushdb
+        conn.sadd('priority-queues', 'priority-queue:foo')
         conn.zadd('priority-queue:foo', 0, 'blah')
         conn.zadd("priority-queue-counts:foo", 1, 'blah')
       end
