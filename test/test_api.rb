@@ -19,5 +19,9 @@ class TestApi < Sidekiq::Test
       assert_equal 1, Sidekiq::PriorityQueue::Queue.all.first.size
     end
 
+    it 'can enumerate jobs' do
+      assert_equal ["blah"], Sidekiq::PriorityQueue::Queue.new('foo').first.args
+    end
+
   end
 end
