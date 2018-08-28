@@ -5,6 +5,7 @@ require 'sidekiq/api'
 module Sidekiq
   module PriorityQueue
     class Queue
+      include  Enumerable
 
       attr_reader :name
 
@@ -17,12 +18,34 @@ module Sidekiq
         Sidekiq.redis { |con| con.zcard(@rname) }
       end
 
+      def each
+        initial_size = size
+        deleted_size = 0
+        page = 0
+        page_size = 50
+
+        while true do
+          range_start = page * page_size - deleted_size
+          range_end   = range_start + page_size - 1
+          entries = Sidekiq.redis do |conn|
+            conn.zrange @rname, range_start, range_end
+          end
+          break if entries.empty?
+          page += 1
+          entries.each do |entry|
+            yield Job.new(entry, @name)
+          end
+          deleted_size = initial_size - size
+        end
+      end
+
       def self.all
          Sidekiq.redis { |con| con.smembers('priority-queues') }
           .map{ |key| key.gsub('priority-queue:', '') }
           .sort
           .map { |q| Queue.new(q) }
       end
+
     end
 
     class Job < Sidekiq::Job
