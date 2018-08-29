@@ -4,12 +4,14 @@ Extends Sidekiq with support for queuing jobs with a fine grained priority and e
 
 The standard Sidekiq setup performsn really well using Redis lists but lists can only be strict FIFO queues, which can be hugely problematic when they processes slowly and one user may need to wait hours behind a backlog of jobs.
 
-Sidekiq Priority Queue offers a pluggable solution retaining the simplicity and performance of Sidekiq. The priority queue is a building block for emulating sub-queues (per tenannt or user) by de-prioritising jobs according to how many jobs are already in this sub-queue. 
+Sidekiq Priority Queue offers a pluggable solution retaining the simplicity and performance of Sidekiq. The priority queue is a building block for emulating sub-queues (per tenannt or user) by de-prioritising jobs according to how many jobs are already in this sub-queue.
+
+Sorces of inspiration are naturally Sidekiq itself, the fantastic Redis documentation, and https://github.com/gocraft/work
 
 Installation
 -----------------
 
-    gem install sidekiq
+    gem install sidekiq-priority_queue
 
 Configuration
 -----------------   
