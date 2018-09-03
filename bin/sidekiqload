@@ -1,5 +1,11 @@
 #!/usr/bin/env ruby
 
+# Copyright (c) Contributed Systems LLC, ChartMogul Ltd
+
+# Sidekiq-priority_queue is an Open Source project licensed under the terms of
+# the LGPLv3 license.  Please see <http://www.gnu.org/licenses/lgpl-3.0.html>
+# for license text.
+
 # Quiet some warnings we see when running in warning mode:
 # RUBYOPT=-w bundle exec sidekiq
 $TESTING = false
@@ -101,7 +107,7 @@ count = 100_000
     #TODO why does Sidekiq::Client.push not work as expected?
     con.zadd('priority-queue:default', idx, { 'class' => LoadWorker, 'args' => [idx] }.to_json)
   end
-end  
+end
 Sidekiq.logger.error "Created #{ Sidekiq::PriorityQueue::Queue.new().size } jobs"
 
 Monitoring = Thread.new do
