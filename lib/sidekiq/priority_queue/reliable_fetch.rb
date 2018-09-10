@@ -116,6 +116,7 @@ module Sidekiq
             end
           end
         end
+        Sidekiq.logger.info("Pushed #{ jobs_to_requeue.map{|q| q.size }.reduce(:+) } jobs back to Redis")
       rescue => ex
         Sidekiq.logger.warn("Failed to requeue #{ jobs_to_requeue.map{|q| q.size }.reduce(:+) } jobs: #{ex.message}")
       end
