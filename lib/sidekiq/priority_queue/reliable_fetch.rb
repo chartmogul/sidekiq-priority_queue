@@ -43,8 +43,6 @@ module Sidekiq
 
       def retrieve_work
         work = @queues.detect do |q|
-          job = spop(wip_queue(q))
-          break [q,job] if job
           job = zpopmin_sadd(q, wip_queue(q));
           break [q,job] if job
         end
@@ -75,12 +73,37 @@ module Sidekiq
       end
 
       def self.bulk_requeue(_inprogress, options)
+        Sidekiq.logger.debug { "Re-queueing terminated jobs" }
+        requeue_wip_jobs(options[:queues], options[:index])
+      end
+
+      def self.resume_wip_jobs(queues, index)
+        Sidekiq.logger.debug { "Re-queueing WIP jobs" }
+        requeue_wip_jobs(queues, index)
+      end
+
+      Sidekiq.configure_server do |config|
+        config.on(:startup) do
+          if reliable_fetch_active?(config)
+            Sidekiq::PriorityQueue::ReliableFetch.resume_wip_jobs(config.options[:queues], config.options[:index])
+          end
+        end
+      end
+
+      private
+
+      def self.reliable_fetch_active?(config)
+        return true if config.options[:fetch] == Sidekiq::PriorityQueue::ReliableFetch
+        return config.options[:fetch] == Sidekiq::PriorityQueue::CombinedFetch &&
+          config.options[:fetch].fetches.include?(Sidekiq::PriorityQueue::ReliableFetch)
+      end
+
+      def self.requeue_wip_jobs(queues, index)
         jobs_to_requeue = {}
         Sidekiq.redis do |conn|
-          Sidekiq.logger.debug { "Re-queueing terminated jobs" }
-          options[:queues].map { |q| "priority-queue:#{q}" }.each do |q|
+          queues.map { |q| "priority-queue:#{q}" }.each do |q|
+            wip_queue = "#{q}_#{Socket.gethostname}_#{index}"
             jobs_to_requeue[q] = []
-            wip_queue = "#{q}_#{Socket.gethostname}_#{options[:index]}"
             while job = conn.spop(wip_queue) do
               jobs_to_requeue[q] << job
             end
@@ -88,6 +111,7 @@ module Sidekiq
 
           conn.pipelined do
             jobs_to_requeue.each do |queue, jobs|
+              return unless jobs.size > 0
               conn.zadd(queue, jobs.map{|j| [0,j] })
             end
           end

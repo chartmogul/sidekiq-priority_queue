@@ -36,16 +36,15 @@ class TestFetcher < Sidekiq::Test
       end
     end
 
-    it 'resumes WIP jobs first' do
+    it 'pushes WIP jobs back to the head of the queue' do
       killed_job = {'jid' => 'blah_blah', 'args' => [1,2,3], 'subqueue' => 1 }
       Sidekiq.redis do |conn|
         conn.sadd("priority-queue:foo_#{Socket.gethostname}_0", killed_job.to_json)
       end
-      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(queues: ['foo'], index: 0)
-      uow = fetch.retrieve_work
-      refute_nil uow
-      assert_equal 'foo', uow.queue_name
-      assert_equal killed_job.to_json, uow.job
+
+      fetch = Sidekiq::PriorityQueue::ReliableFetch
+      fetch.resume_wip_jobs(['foo'], 0)
+      assert_equal 2, Sidekiq::PriorityQueue::Queue.new('foo').size
     end
 
     it 'retrieves with strict setting' do
@@ -73,6 +72,5 @@ class TestFetcher < Sidekiq::Test
       assert_equal 2, q1.size
       assert_equal 0, q2.size
     end
-
   end
 end
