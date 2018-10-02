@@ -2,7 +2,7 @@ Sidekiq Priority Queue
 ==============
 Extends Sidekiq with support for queuing jobs with a fine grained priority and emulating multiple queues using a single Redis sorted set, ideal for multi-tennant applications.
 
-The standard Sidekiq setup performsn really well using Redis lists but lists can only be strict FIFO queues, which can be hugely problematic when they processes slowly and one user may need to wait hours behind a backlog of jobs.
+The standard Sidekiq setup performs really well using Redis lists but lists can only be strict FIFO queues, which can be hugely problematic when they processes slowly and one user may need to wait hours behind a backlog of jobs.
 
 Sidekiq Priority Queue offers a pluggable solution retaining the simplicity and performance of Sidekiq. The priority queue is a building block for emulating sub-queues (per tenannt or user) by de-prioritising jobs according to how many jobs are already in this sub-queue.
 
