@@ -26,6 +26,21 @@ Sidekiq.configure_client do |config|
     end
 end
 ```
+Usage
+-----------------   
+```
+class Worker
+  include Sidekiq::Worker
+  sidekiq_options priority: 1000
+end
+```
+Alternatively, you can split jobs into subqueues (via a proc) which are deprioritised based on the subqueue size:
+```
+class Worker
+  include Sidekiq::Worker
+  sidekiq_options subqueue: ->(args){ args[0] }
+end
+```
 
 Development
 -----------------
