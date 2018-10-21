@@ -31,15 +31,23 @@ class TestClient < Sidekiq::Test
 
     it 'prioritises based on already enqueued jobs for the same key' do
       Sidekiq.redis {|c| c.flushdb }
-      assert PrioritizedWorker.perform_async(1)
-      assert PrioritizedWorker.perform_async(1)
-      assert_equal 2, Sidekiq::PriorityQueue::Queue.new().size
-      job_count_p1 = Sidekiq.redis {|c| c.zcount('priority-queue:default', 1, 1) }
-      job_count_p2 = Sidekiq.redis {|c| c.zcount('priority-queue:default', 2, 2) }
-      assert_equal 1, job_count_p1
-      assert_equal 1, job_count_p2
-      job, _ = Sidekiq.redis {|c| c.zrevrange('priority-queue:default', 1, 1) }
-      assert_equal 1, JSON.parse(job)['subqueue']
+      assert PrioritizedWorker.perform_async('user_1', 'enqueued_first')
+      assert PrioritizedWorker.perform_async('user_1', 'enqueued_second')
+      assert PrioritizedWorker.perform_async('user_2', 'enqueued_third')
+
+      assert_equal 3, Sidekiq::PriorityQueue::Queue.new().size
+
+      jobs_by_priority = Sidekiq
+        .redis { |c| c.zrange('priority-queue:default', 0, 2, withscores: true) }
+        .map   { |args, priority| [priority, JSON.parse(args)['args']] }
+
+      assert = [
+        [1.0, ["user_1", "enqueued_first"]],
+        [1.0, ["user_2", "enqueued_third"]],
+        [2.0, ["user_1", "enqueued_second"]]
+      ]
+
+      assert_equal assert, jobs_by_priority
     end
   end
 end
