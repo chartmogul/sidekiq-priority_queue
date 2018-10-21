@@ -17,13 +17,13 @@ Configuration
 -----------------   
 ```
 Sidekiq.configure_server do |config|
-    config.options[:fetch] = Sidekiq::PriorityQueue::Fetch
+  config.options[:fetch] = Sidekiq::PriorityQueue::Fetch
 end
 
 Sidekiq.configure_client do |config|
-    config.client_middleware do |chain|
-        chain.add Sidekiq::PriorityQueue::Client
-    end
+  config.client_middleware do |chain|
+    chain.add Sidekiq::PriorityQueue::Client
+  end
 end
 ```
 Usage
@@ -38,7 +38,13 @@ Alternatively, you can split jobs into subqueues (via a proc) which are depriori
 ```
 class Worker
   include Sidekiq::Worker
+
+  # args[0] will take the `user_id` argument below, and assign priority dynamically.
   sidekiq_options subqueue: ->(args){ args[0] }
+
+  def perform(user_id, other_args)
+    # do jobs
+  end
 end
 ```
 
