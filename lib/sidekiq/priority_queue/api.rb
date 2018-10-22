@@ -28,12 +28,12 @@ module Sidekiq
           range_start = page * page_size - deleted_size
           range_end   = range_start + page_size - 1
           entries = Sidekiq.redis do |conn|
-            conn.zrange @rname, range_start, range_end
+            conn.zrange @rname, range_start, range_end, withscores: true
           end
           break if entries.empty?
           page += 1
-          entries.each do |entry|
-            yield Job.new(entry, @name)
+          entries.each do |entry, priority|
+            yield Job.new(entry, @name, priority)
           end
           deleted_size = initial_size - size
         end

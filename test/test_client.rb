@@ -17,45 +17,27 @@ class TestClient < Sidekiq::Test
     it 'pushes to a priority queue and not a normal queue' do
       Sidekiq.redis {|c| c.flushdb }
       assert Worker.set(priority: 0).perform_async(1)
-      assert_equal 1, Sidekiq::PriorityQueue::Queue.new().size
-      job_count = Sidekiq.redis {|c| c.zcount('priority-queue:default', 0, 0) }
-      assert_equal 1, job_count
       assert_equal 0, Sidekiq::Queue.new().size
+      q = Sidekiq::PriorityQueue::Queue.new()
+      assert_equal 1, q.size
+      assert_equal 0, q.first.priority
     end
 
     class PrioritizedWorker
       include Sidekiq::Worker
-
       sidekiq_options subqueue: ->(args){ args[0] }
     end
 
     it 'prioritises based on already enqueued jobs for the same key' do
       Sidekiq.redis {|c| c.flushdb }
-      assert PrioritizedWorker.perform_async('user_1', 'enqueued_first')
-      assert PrioritizedWorker.perform_async('user_1', 'enqueued_second')
-      assert PrioritizedWorker.perform_async('user_2', 'enqueued_third')
+      # NOTE: The ordering of keys with the same score is lexicographical: https://redis.io/commands/zrange
+      jobs_with_expected_priority = [ ['a',1], ['b',1], ['a',2] ]
+      jobs_with_expected_priority.each{|arg,_| PrioritizedWorker.perform_async(arg) }
 
-      assert_equal 3, Sidekiq::PriorityQueue::Queue.new().size
+      queue = Sidekiq::PriorityQueue::Queue.new
+      assert_equal 3, queue.size
 
-      jobs_by_priority = Sidekiq
-        .redis { |c| c.zrange('priority-queue:default', 0, 2, withscores: true) }
-        .map   { |args, priority| [JSON.parse(args)['args'], priority] }
-
-      jobs_first_priority, jobs_lower_priority = jobs_by_priority.partition { |j| j[1] == 1 }
-
-      # NOTE: The ordering of keys with the same score is lexicographical (sorta alphabetical)
-      #       https://redis.io/commands/zrange
-      #       Therefore we don't test the ordering within the same-score elements.
-      assert_first_jobs = [
-        [["user_2", "enqueued_third"], 1.0],
-        [["user_1", "enqueued_first"], 1.0]
-      ]
-      assert_second_jobs = [
-        [["user_1", "enqueued_second"], 2.0]
-      ]
-
-      assert_equal assert_first_jobs.sort, jobs_first_priority.sort
-      assert_equal assert_second_jobs.sort, jobs_lower_priority.sort
+      assert_equal jobs_with_expected_priority, queue.map{ |q| [q.subqueue, q.priority] }
     end
   end
 end
