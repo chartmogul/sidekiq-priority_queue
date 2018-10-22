@@ -35,11 +35,7 @@ trap 'TSTP' do
   puts "=" * 80
 end
 
-begin
-  require 'pry-byebug'
-rescue LoadError
-end
-
+require 'pry-byebug'
 require 'minitest/autorun'
 
 require 'sidekiq'

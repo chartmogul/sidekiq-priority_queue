@@ -3,6 +3,7 @@ gemspec
 
 
 group :test do
+  gem 'pry-byebug'
   gem 'minitest'
   gem 'rake'
   gem 'simplecov'
