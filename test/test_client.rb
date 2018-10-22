@@ -39,15 +39,23 @@ class TestClient < Sidekiq::Test
 
       jobs_by_priority = Sidekiq
         .redis { |c| c.zrange('priority-queue:default', 0, 2, withscores: true) }
-        .map   { |args, priority| [priority, JSON.parse(args)['args']] }
+        .map   { |args, priority| [JSON.parse(args)['args'], priority] }
 
-      assert = [
-        [1.0, ["user_1", "enqueued_first"]],
-        [1.0, ["user_2", "enqueued_third"]],
-        [2.0, ["user_1", "enqueued_second"]]
+      jobs_first_priority, jobs_lower_priority = jobs_by_priority.partition { |j| j[1] == 1 }
+
+      # NOTE: The ordering of keys with the same score is lexicographical (sorta alphabetical)
+      #       https://redis.io/commands/zrange
+      #       Therefore we don't test the ordering within the same-score elements.
+      assert_first_jobs = [
+        [["user_2", "enqueued_third"], 1.0],
+        [["user_1", "enqueued_first"], 1.0]
+      ]
+      assert_second_jobs = [
+        [["user_1", "enqueued_second"], 2.0]
       ]
 
-      assert_equal assert, jobs_by_priority
+      assert_equal assert_first_jobs.sort, jobs_first_priority.sort
+      assert_equal assert_second_jobs.sort, jobs_lower_priority.sort
     end
   end
 end
