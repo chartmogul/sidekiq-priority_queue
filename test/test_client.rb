@@ -17,29 +17,27 @@ class TestClient < Sidekiq::Test
     it 'pushes to a priority queue and not a normal queue' do
       Sidekiq.redis {|c| c.flushdb }
       assert Worker.set(priority: 0).perform_async(1)
-      assert_equal 1, Sidekiq::PriorityQueue::Queue.new().size
-      job_count = Sidekiq.redis {|c| c.zcount('priority-queue:default', 0, 0) }
-      assert_equal 1, job_count
       assert_equal 0, Sidekiq::Queue.new().size
+      q = Sidekiq::PriorityQueue::Queue.new()
+      assert_equal 1, q.size
+      assert_equal 0, q.first.priority
     end
 
     class PrioritizedWorker
       include Sidekiq::Worker
-
       sidekiq_options subqueue: ->(args){ args[0] }
     end
 
     it 'prioritises based on already enqueued jobs for the same key' do
       Sidekiq.redis {|c| c.flushdb }
-      assert PrioritizedWorker.perform_async(1)
-      assert PrioritizedWorker.perform_async(1)
-      assert_equal 2, Sidekiq::PriorityQueue::Queue.new().size
-      job_count_p1 = Sidekiq.redis {|c| c.zcount('priority-queue:default', 1, 1) }
-      job_count_p2 = Sidekiq.redis {|c| c.zcount('priority-queue:default', 2, 2) }
-      assert_equal 1, job_count_p1
-      assert_equal 1, job_count_p2
-      job, _ = Sidekiq.redis {|c| c.zrevrange('priority-queue:default', 1, 1) }
-      assert_equal 1, JSON.parse(job)['subqueue']
+      # NOTE: The ordering of keys with the same score is lexicographical: https://redis.io/commands/zrange
+      jobs_with_expected_priority = [ ['a',1], ['b',1], ['a',2] ]
+      jobs_with_expected_priority.each{|arg,_| PrioritizedWorker.perform_async(arg) }
+
+      queue = Sidekiq::PriorityQueue::Queue.new
+      assert_equal 3, queue.size
+
+      assert_equal jobs_with_expected_priority, queue.map{ |q| [q.subqueue, q.priority] }
     end
   end
 end
