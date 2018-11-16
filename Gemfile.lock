@@ -21,7 +21,7 @@ GEM
     pry-byebug (3.6.0)
       byebug (~> 10.0)
       pry (~> 0.10)
-    rack (2.0.5)
+    rack (2.0.6)
     rack-protection (2.0.3)
       rack
     rack-test (1.1.0)
@@ -51,4 +51,4 @@ DEPENDENCIES
   simplecov
 
 BUNDLED WITH
-   1.16.6
+   1.17.1
