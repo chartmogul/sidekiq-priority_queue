@@ -39,5 +39,20 @@ class TestClient < Sidekiq::Test
 
       assert_equal jobs_with_expected_priority, queue.map{ |q| [q.subqueue, q.priority] }
     end
+
+    class SubqueuePersistedWorker
+      include Sidekiq::Worker
+      sidekiq_options subqueue: 123 # emualte the persisted subqueue argument
+    end
+
+    it 'works when subqueue argument is already resolved / persisted' do
+      Sidekiq.redis {|c| c.flushdb }
+
+      SubqueuePersistedWorker.perform_async(123)
+
+      queue = Sidekiq::PriorityQueue::Queue.new
+      assert_equal 1, queue.size
+      assert_equal [[123, 1]], queue.map{ |q| [q.subqueue, q.priority] }
+    end
   end
 end
