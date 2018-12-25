@@ -11,7 +11,7 @@ module Sidekiq
         elsif item['subqueue']
           # replace the proc with what it returns
           sadd('priority-queues', queue)
-          item['subqueue'] = item['subqueue'].call(item['args'])
+          item['subqueue'] = resolve_subqueue(item['subqueue'], item['args'])
           priority = fetch_and_add(queue, item['subqueue'], item)
           zadd(queue, priority, item)
           return item['jid']
@@ -22,6 +22,11 @@ module Sidekiq
       end
 
       private
+
+      def resolve_subqueue(subqueue, job_args)
+        return subqueue unless subqueue.respond_to?(:call)
+        subqueue.call(job_args)
+      end
 
       def zadd(queue, score, item)
         Sidekiq.redis do |conn|
