@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sidekiq-priority_queue (0.0.1)
+    sidekiq-priority_queue (0.1.0)
       sidekiq (>= 4)
 
 GEM
