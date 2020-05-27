@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'sidekiq-priority_queue'
-  s.version     = '0.0.0'
+  s.version     = '0.0.1'
   s.date        = '2018-07-31'
   s.summary     = "Priority Queuing for Sidekiq"
   s.description = "An extension for Sidekiq allowing jobs in a single queue to be execued by a priority score rather than FIFO"
