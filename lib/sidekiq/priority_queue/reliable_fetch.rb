@@ -38,7 +38,7 @@ module Sidekiq
         @strictly_ordered_queues = !!options[:strict]
         @queues = options[:queues].map { |q| "priority-queue:#{q}" }
         @queues = @queues.uniq if @strictly_ordered_queues
-        @process_index = options[:index]
+        @process_index = options[:index] || ENV['PROCESS_INDEX']
       end
 
       def retrieve_work
@@ -74,12 +74,14 @@ module Sidekiq
 
       def self.bulk_requeue(_inprogress, options)
         Sidekiq.logger.debug { "Re-queueing terminated jobs" }
-        requeue_wip_jobs(options[:queues], options[:index])
+        process_index = options[:index] || ENV['PROCESS_INDEX']
+        requeue_wip_jobs(options[:queues], process_index)
       end
 
-      def self.resume_wip_jobs(queues, index)
+      def self.resume_wip_jobs(queues, process_index)
         Sidekiq.logger.debug { "Re-queueing WIP jobs" }
-        requeue_wip_jobs(queues, index)
+        process_index ||= ENV['PROCESS_INDEX']
+        requeue_wip_jobs(queues, process_index)
       end
 
       Sidekiq.configure_server do |config|
