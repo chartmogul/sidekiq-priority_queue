@@ -46,7 +46,7 @@ class TestFetcher < Sidekiq::Test
       assert_equal 1, q1.size
       assert_equal 0, q2.size
       uow = Sidekiq::PriorityQueue::Fetch::UnitOfWork
-      Sidekiq::PriorityQueue::Fetch.bulk_requeue(
+      Sidekiq::PriorityQueue::Fetch.new(queues: []).bulk_requeue(
         [ uow.new('priority-queue:foo', 'bob'), uow.new('fuzzy:queue:foo', 'bar') ],
         queues: []
       )

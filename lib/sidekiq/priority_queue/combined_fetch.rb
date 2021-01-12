@@ -3,36 +3,34 @@
 module Sidekiq
   module PriorityQueue
     class CombinedFetch
+      attr_reader :fetches
 
-      def initialize(options)
-        @fetches = @@fetches.map{ |f| f.new(options) }
+      def initialize(fetches = [])
+        @fetches = fetches
       end
 
       def retrieve_work
-        @fetches.each do |fetch|
+        fetches.each do |fetch|
           work = fetch.retrieve_work
           return work if work
         end
       end
 
       def self.configure(&block)
-        @@fetches = []
-        yield self
-        self
+        combined_fetch = self.new
+        yield combined_fetch
+
+        combined_fetch
       end
 
-      def self.add(fetch)
-        @@fetches << fetch
+      def add(fetch)
+        fetches << fetch
       end
 
-      def self.fetches
-        @@fetches
-      end
-
-      def self.bulk_requeue(inprogress, options)
+      def bulk_requeue(inprogress, options)
         # ReliableFetch#bulk_equeue ignores inprogress, so it's safe to call both
-        @@fetches.each do |f|
-          if [Fetch, ReliableFetch].include?(f)
+        fetches.each do |f|
+          if [Fetch, ReliableFetch].any? { |klass| f.is_a?(klass) }
             jobs_to_requeue = inprogress.select{|uow| uow.queue.start_with?('priority-queue:') }
             f.bulk_requeue(jobs_to_requeue, options)
           else

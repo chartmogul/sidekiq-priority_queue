@@ -61,7 +61,7 @@ module Sidekiq
         end
       end
 
-      def self.bulk_requeue(inprogress, options)
+      def bulk_requeue(inprogress, options)
         return if inprogress.empty?
 
         Sidekiq.logger.debug { "Re-queueing terminated jobs" }

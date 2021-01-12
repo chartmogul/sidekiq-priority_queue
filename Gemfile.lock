@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     sidekiq-priority_queue (0.1.0)
-      sidekiq (>= 4)
+      sidekiq (>= 6)
 
 GEM
   remote: https://rubygems.org/
@@ -20,17 +20,14 @@ GEM
       byebug (~> 11.0)
       pry (~> 0.13.0)
     rack (2.2.3)
-    rack-protection (2.0.8.1)
-      rack
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
     rake (13.0.1)
-    redis (4.1.4)
-    sidekiq (5.2.9)
-      connection_pool (~> 2.2, >= 2.2.2)
+    redis (4.2.5)
+    sidekiq (6.1.2)
+      connection_pool (>= 2.2.2)
       rack (~> 2.0)
-      rack-protection (>= 1.5.0)
-      redis (>= 3.3.5, < 4.2)
+      redis (>= 4.2.0)
     simplecov (0.18.5)
       docile (~> 1.1)
       simplecov-html (~> 0.11)

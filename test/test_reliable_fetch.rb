@@ -64,7 +64,7 @@ class TestFetcher < Sidekiq::Test
         conn.sadd("priority-queue:foo_#{Socket.gethostname}_0", 'bob')
       end
 
-      Sidekiq::PriorityQueue::ReliableFetch.bulk_requeue(
+      Sidekiq::PriorityQueue::ReliableFetch.new(queues: ['foo'], index: 0).bulk_requeue(
         [ uow.new('priority-queue:foo', 'bob'), uow.new('fuzzy:queue:foo', 'bar') ],
         { queues: ['foo'], index: 0 }
       )

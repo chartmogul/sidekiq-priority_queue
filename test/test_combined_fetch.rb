@@ -23,11 +23,9 @@ class TestFetcher < Sidekiq::Test
 
     it 'retrieves from both normal and priority queues' do
       fetch = Sidekiq::PriorityQueue::CombinedFetch.configure do |fetches|
-        fetches.add Sidekiq::BasicFetch
-        fetches.add Sidekiq::PriorityQueue::Fetch
+        fetches.add Sidekiq::BasicFetch.new(queues: ['foo'])
+        fetches.add Sidekiq::PriorityQueue::Fetch.new(queues: ['foo'])
       end
-
-      fetch = fetch.new(:queues => ['foo'])
 
       uow = fetch.retrieve_work
       refute_nil uow
@@ -42,8 +40,8 @@ class TestFetcher < Sidekiq::Test
 
     it 'bulk requeues all jobs only once' do
       fetch = Sidekiq::PriorityQueue::CombinedFetch.configure do |fetches|
-        fetches.add Sidekiq::BasicFetch
-        fetches.add Sidekiq::PriorityQueue::Fetch
+        fetches.add Sidekiq::BasicFetch.new(queues: ['foo'], index: 0)
+        fetches.add Sidekiq::PriorityQueue::Fetch.new(queues: ['foo'], index: 0)
       end
 
       q1 = Sidekiq::PriorityQueue::Queue.new('foo')
