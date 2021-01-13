@@ -72,10 +72,10 @@ module Sidekiq
         end
       end
 
-      def self.bulk_requeue(_inprogress, options)
+      def bulk_requeue(_inprogress, options)
         Sidekiq.logger.debug { "Re-queueing terminated jobs" }
         process_index = options[:index] || ENV['PROCESS_INDEX']
-        requeue_wip_jobs(options[:queues], process_index)
+        self.class.requeue_wip_jobs(options[:queues], process_index)
       end
 
       def self.resume_wip_jobs(queues, process_index)
@@ -95,9 +95,9 @@ module Sidekiq
       private
 
       def self.reliable_fetch_active?(config)
-        return true if config.options[:fetch] == Sidekiq::PriorityQueue::ReliableFetch
-        return config.options[:fetch] == Sidekiq::PriorityQueue::CombinedFetch &&
-          config.options[:fetch].fetches.include?(Sidekiq::PriorityQueue::ReliableFetch)
+        return true if config.options[:fetch].is_a?(Sidekiq::PriorityQueue::ReliableFetch)
+        return config.options[:fetch].is_a?(Sidekiq::PriorityQueue::CombinedFetch) &&
+          config.options[:fetch].fetches.any? { |f| f.is_a?(Sidekiq::PriorityQueue::ReliableFetch) }
       end
 
       def self.requeue_wip_jobs(queues, index)
