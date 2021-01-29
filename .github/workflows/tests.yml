@@ -1,0 +1,29 @@
+name: Tests
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+jobs:
+  tests:
+    name: Run tests
+    outputs:
+      job-status: ${{ job.status }}
+    runs-on: ubuntu-18.04
+    timeout-minutes: 10
+    services:
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.1
+      - name: Set up correct version of Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      - name: Install dependencies via Bundler
+        run: bundle install --jobs 4 --retry 3
+      - name: Run tests
+        run: bundle exec rake
