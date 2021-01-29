@@ -23,11 +23,6 @@ jobs:
         uses: actions/setup-ruby@v1
         with:
           ruby-version: 2.7
-      - name: Configure Bundler
-        run: |
-          gem uninstall bundler
-          BUNDLER_VERSION=$(cat Gemfile.lock | tail -1 | tr -d " ")
-          gem install bundler -v $BUNDLER_VERSION
       - name: Install dependencies via Bundler
         run: bundle install --jobs 4 --retry 3
       - name: Run tests
