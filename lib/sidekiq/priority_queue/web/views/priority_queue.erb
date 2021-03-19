@@ -10,6 +10,32 @@
     <%= erb :_paging, locals: { url: "#{root_path}priority_queues/#{CGI.escape(@name)}" } %>
   </div>
 </header>
+<div class="row">
+  <div class="col-sm-12">
+    <h3>Biggest subqueues</h3>
+
+    <summary>
+      <details>
+        <div class="table_container">
+          <table class="table table-hover table-bordered table-striped">
+            <thead>
+              <th>Subqueue name</th>
+              <th>Subqueue size</th>
+            </thead>
+            <% @subqueue_counts.each do |subqueue_count| %>
+              <tr>
+                <td><%= subqueue_count.name %></td>
+                <td><%= subqueue_count.size %></td>
+              </tr>
+            <% end %>
+          </table>
+        </div>
+      </details>
+    </summary>
+
+  </div>
+</div>
+<hr />
 <div class="table_container">
   <table class="queue table table-hover table-bordered table-striped">
     <thead>

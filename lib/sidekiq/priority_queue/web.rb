@@ -8,7 +8,7 @@ module Sidekiq::PriorityQueue
 
     def self.registered(app)
       app.tabs['Priority Queues'] = 'priority_queues'
-      
+
       app.get '/priority_queues' do
         @queues = Queue.all
         render(:erb, File.read("#{ROOT}/views/priority_queues.erb"))
@@ -21,6 +21,10 @@ module Sidekiq::PriorityQueue
         @count = (params['count'] || 25).to_i
         @queue = Sidekiq::Queue.new(@name)
         (@current_page, @total_size, @messages) = page("priority-queue:#{@name}", params['page'], @count)
+        @subqueue_counts = Sidekiq.redis do |con|
+          con.zrevrange("priority-queue-counts:#{@name}", 0, params['subqueue_count'] || 10, withscores: true)
+        end.map { |name, count| SubqueueCount.new(name, count) }
+
         @messages = @messages.map{ |msg| Job.new(msg.first, @name, msg.last) }
         render(:erb, File.read("#{ROOT}/views/priority_queue.erb"))
       end
@@ -32,7 +36,7 @@ module Sidekiq::PriorityQueue
       end
 
     end
-  end  
+  end
 end
 
 ::Sidekiq::Web.register Sidekiq::PriorityQueue::Web
