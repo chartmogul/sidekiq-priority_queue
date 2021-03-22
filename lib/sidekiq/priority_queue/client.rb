@@ -2,7 +2,7 @@ module Sidekiq
   module PriorityQueue
     class Client
 
-      #inserted into Sidekiq's Client as middleware
+      # inserted into Sidekiq's Client as middleware
       def call(worker_class, item, queue, redis_pool)
         if item['priority']
           sadd('priority-queues', queue)
@@ -25,6 +25,7 @@ module Sidekiq
 
       def resolve_subqueue(subqueue, job_args)
         return subqueue unless subqueue.respond_to?(:call)
+
         subqueue.call(job_args)
       end
 
