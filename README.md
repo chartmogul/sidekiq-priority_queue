@@ -48,9 +48,17 @@ class Worker
 end
 ```
 
+Testing
+-----------------
+For example in your `spec/rails_helper.rb` you can include this line:
+```ruby
+require 'sidekiq/priority_queue/testing'
+```
+next to the call to `Sidekiq::Testing.inline!`. It disables the feature for testing and falls back to `inline`/`fake` modes.
+If you accidentally require this in production code, it will likewise fall back to normal Sidekiq scheduling.
+
 Development
 -----------------
-- Install [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and [Vagrant](https://www.vagrantup.com/downloads.html)
-- Start Vagrant with `vagrant up && vagrant ssh`
-- Run `bundle install`
+- Run `docker-compose up -d` to start up a temporary redis instance.
+- Run `bundle install` to install dependencies.
 - Run the tests with `bundle exec rake`
