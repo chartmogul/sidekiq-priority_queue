@@ -59,7 +59,6 @@ If you accidentally require this in production code, it will likewise fall back 
 
 Development
 -----------------
-- Install [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and [Vagrant](https://www.vagrantup.com/downloads.html)
-- Start Vagrant with `vagrant up && vagrant ssh`
-- Run `bundle install`
+- Run `docker-compose up -d` to start up a temporary redis instance.
+- Run `bundle install` to install dependencies.
 - Run the tests with `bundle exec rake`

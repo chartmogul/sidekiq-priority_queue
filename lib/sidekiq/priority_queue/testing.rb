@@ -7,9 +7,17 @@ module Sidekiq
   module PriorityQueue
     module TestingClient
       def call(worker_class, item, queue, redis_pool)
-        # call subqueue as if we used it
-        resolve_subqueue(item['subqueue'], item['args']) if item['subqueue'] && !item['priority']
+        testing_verify_subqueue(item) if item['subqueue'] && !item['priority']
         yield # continue pushing the normal Sidekiq way
+      end
+
+      # Help testing the lambda; raise in case it's invalid.
+      def testing_verify_subqueue(item)
+        subqueue = resolve_subqueue(item['subqueue'], item['args'])
+        serialized = "#{subqueue}"
+
+        raise "subqueue shouldn't be nil" if subqueue.nil?
+        raise "subqueue shouldn't be empty" if serialized == ""
       end
     end
 
