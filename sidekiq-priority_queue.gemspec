@@ -11,6 +11,6 @@ Gem::Specification.new do |s|
   s.license     = 'MIT'
   s.required_ruby_version = '>= 2.5.0'
 
-  s.add_dependency 'sidekiq', '>= 6'
+  s.add_dependency 'sidekiq', '>= 6.2.2'
   s.add_development_dependency 'minitest', '~> 5.10', '>= 5.10.1'
 end
