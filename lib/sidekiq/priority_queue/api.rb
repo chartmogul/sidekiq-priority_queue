@@ -50,7 +50,7 @@ module Sidekiq
 
     SubqueueCount = Struct.new(:name, :size)
 
-    class Job < Sidekiq::Job
+    class Job < Sidekiq::JobRecord
 
       attr_reader :priority
       attr_reader :subqueue
