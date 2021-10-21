@@ -50,7 +50,7 @@ module Sidekiq
       end
 
       def wip_queue(q)
-        "#{q}_#{Socket.gethostname}_#{@process_index}"
+        "#{q}_wip_#{@process_index}"
       end
 
       def zpopmin_sadd(queue, wip_queue)
@@ -104,7 +104,7 @@ module Sidekiq
         jobs_to_requeue = {}
         Sidekiq.redis do |conn|
           queues.map { |q| "priority-queue:#{q}" }.each do |q|
-            wip_queue = "#{q}_#{Socket.gethostname}_#{index}"
+            wip_queue = "#{q}_wip_#{index}"
             jobs_to_requeue[q] = []
             while job = conn.spop(wip_queue) do
               jobs_to_requeue[q] << job
