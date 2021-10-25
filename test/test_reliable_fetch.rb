@@ -37,8 +37,8 @@ class TestFetcher < Sidekiq::Test
       assert_nil fetch.retrieve_work
     end
 
-    it 'cleanups dead jobs on startup' do
-      # First we have to mimic old jobs laying around
+    it 'cleans up dead jobs on startup' do
+      # First we have to mimic old jobs lying around
       previous_process_identity = "sidekiq-pipeline-32152-xfwvw:42251:#{SecureRandom.hex(6)}"
       priority_queue = "priority-queue:bar"
 

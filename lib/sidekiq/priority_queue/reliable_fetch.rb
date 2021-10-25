@@ -90,6 +90,7 @@ module Sidekiq
         end
       end
 
+      # Below method is called when we close sidekiq process gracefully
       def bulk_requeue(_inprogress, _options)
         Sidekiq.logger.debug { "Priority ReliableFetch: Re-queueing terminated jobs" }
         requeue_wip_jobs
@@ -98,16 +99,17 @@ module Sidekiq
 
       private
 
+      # Below method is only to make sure we get jobs from incorrectly closed process (for example force killed using kill -9 SIDEKIQ_PID)
       def cleanup_the_dead
         overall_moved_count = 0
         Sidekiq.redis do |conn|
-          conn.sscan_each("super_processes_priority") do |x|
-            next if conn.exists?(x) # Don't cleanup currently running processes
+          conn.sscan_each("super_processes_priority") do |super_process|
+            next if conn.exists?(super_process) # Don't clean up currently running processes
 
-            Sidekiq.logger.debug { "Priority ReliableFetch: Moving job from #{x} back to original queues" }
+            Sidekiq.logger.debug { "Priority ReliableFetch: Moving job from #{super_process} back to original queues" }
 
             # We need to pushback any leftover jobs still in WIP
-            previously_handled_queues = conn.smembers("#{x}:super_priority_queues")
+            previously_handled_queues = conn.smembers("#{super_process}:super_priority_queues")
 
             # Below previously_handled_queues are simply WIP queues of previous, dead processes
             previously_handled_queues.each do |previously_handled_queue|
@@ -126,9 +128,9 @@ module Sidekiq
               Sidekiq.logger.debug { "Priority ReliableFetch: Moved #{queue_moved_size} jobs from ##{previously_handled_queue} back to original_queue: #{original_priority_queue_name} "}
             end
 
-            Sidekiq.logger.debug { "Priority ReliableFetch: Unregistering super process #{x}" }
-            conn.del("#{x}:super_priority_queues")
-            conn.srem("super_processes_priority", x)
+            Sidekiq.logger.debug { "Priority ReliableFetch: Unregistering super process #{super_process}" }
+            conn.del("#{super_process}:super_priority_queues")
+            conn.srem("super_processes_priority", super_process)
           end
         end
         Sidekiq.logger.debug { "Priority ReliableFetch: Moved overall #{overall_moved_count} jobs from WIP queues" }
@@ -163,16 +165,16 @@ module Sidekiq
       end
 
       def register_myself
-        qs = @queues.map { |q| wip_queue(q) }
+        super_process_wip_queues = @queues.map { |q| wip_queue(q) }
         id = identity # This is from standard sidekiq, updated with every heartbeat
 
         # This method will run multiple times so seeing this message twice is no problem.
-        Sidekiq.logger.debug { "Priority ReliableFetch: Registering super process #{id} with #{qs}" }
+        Sidekiq.logger.debug { "Priority ReliableFetch: Registering super process #{id} with #{super_process_wip_queues}" }
 
         Sidekiq.redis do |conn|
           conn.multi do
             conn.sadd("super_processes_priority", id)
-            conn.sadd("#{id}:super_priority_queues", qs)
+            conn.sadd("#{id}:super_priority_queues", super_process_wip_queues)
           end
         end
       end
