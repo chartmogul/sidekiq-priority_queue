@@ -79,7 +79,7 @@ module Sidekiq
       end
 
       def spop(wip_queue)
-        Sidekiq.redis{ |con| con.spop(wip_queue) }
+        Sidekiq.redis { |con| con.spop(wip_queue) }
       end
 
       def queues_cmd
@@ -120,6 +120,7 @@ module Sidekiq
               loop do
                 break if conn.scard(previously_handled_queue) == 0
 
+                # Here we should wrap below two operations in Lua script
                 item = conn.spop(previously_handled_queue)
                 conn.zadd(original_priority_queue_name, 0, item)
                 queue_moved_size += 1
