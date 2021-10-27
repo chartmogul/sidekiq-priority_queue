@@ -83,3 +83,23 @@ def with_logging(lvl=Logger::DEBUG)
     Sidekiq.logger.level = old
   end
 end
+
+def reset_sidekiq_lifecycle_events
+  Sidekiq.options[:lifecycle_events] = {
+    startup: [],
+    quiet: [],
+    shutdown: [],
+    heartbeat: []
+  }
+end
+
+def setup_reliable_fetcher(queues = ['foo'])
+  fetch = Sidekiq::PriorityQueue::ReliableFetch.new(queues: queues, index: 0)
+  fetch.setup
+  SidekiqUtilInstance.new.fire_event(:startup)
+  fetch
+end
+
+class SidekiqUtilInstance
+  include Sidekiq::Util
+end
