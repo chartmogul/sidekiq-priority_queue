@@ -126,6 +126,8 @@ module Sidekiq
                 queue_moved_size += 1
                 overall_moved_count += 1
               end
+              # Below we simply remove old WIP queue
+              conn.srem(previously_handled_queue) if conn.scard(previously_handled_queue) == 0
               Sidekiq.logger.debug { "Priority ReliableFetch: Moved #{queue_moved_size} jobs from ##{previously_handled_queue} back to original_queue: #{original_priority_queue_name} "}
             end
 

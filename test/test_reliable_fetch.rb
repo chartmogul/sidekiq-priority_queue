@@ -41,10 +41,10 @@ class TestFetcher < Sidekiq::Test
       # First we have to mimic old jobs lying around
       previous_process_identity = "sidekiq-pipeline-32152-xfwvw:42251:#{SecureRandom.hex(6)}"
       priority_queue = "priority-queue:bar"
+      previous_wip_queue = "queue:spriorityq|#{previous_process_identity}|#{priority_queue}"
 
       Sidekiq.redis do |conn|
         conn.sadd("super_processes_priority", previous_process_identity)
-        previous_wip_queue = "queue:spriorityq|#{previous_process_identity}|#{priority_queue}"
         conn.sadd("#{previous_process_identity}:super_priority_queues", previous_wip_queue)
         conn.sadd(previous_wip_queue, job.to_json)
       end
@@ -57,6 +57,7 @@ class TestFetcher < Sidekiq::Test
       assert_equal 0, Sidekiq::PriorityQueue::Queue.new('bar').size
       SidekiqUtilInstance.new.fire_event(:startup)
       assert_equal 1, Sidekiq::PriorityQueue::Queue.new('bar').size
+      refute Sidekiq.redis { |c| c.exists?(previous_wip_queue) }
     end
 
     it 'registers process and private queues on startup' do
