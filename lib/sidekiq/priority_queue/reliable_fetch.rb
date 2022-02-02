@@ -113,7 +113,7 @@ module Sidekiq
       end
 
       def orphan_check?
-        delay = @options.fetch(:super_fetch_orphan_check, 3600).to_i
+        delay = @options.fetch(:reliable_fetch_orphan_check, 3600).to_i
         return false if delay.zero?
 
         Sidekiq.redis do |conn|
