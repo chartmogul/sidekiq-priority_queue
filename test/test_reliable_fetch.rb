@@ -1,17 +1,17 @@
 # frozen_string_literal: true
+
 require_relative 'helper'
 
 class TestFetcher < Sidekiq::Test
-
   describe 'reliable fetcher' do
-    job = {'jid' => 'blah', 'args' => [1,2,3], 'subqueue' => 1 }
+    job = { 'jid' => 'blah', 'args' => [1, 2, 3], 'subqueue' => 1 }
 
     before do
-      Sidekiq.redis = { :url => REDIS_URL }
+      Sidekiq.redis = { url: REDIS_URL }
       Sidekiq.redis do |conn|
         conn.flushdb
         conn.zadd('priority-queue:foo', 0, job.to_json)
-        conn.zadd("priority-queue-counts:foo", 1, job['subqueue'])
+        conn.zadd('priority-queue-counts:foo', 1, job['subqueue'])
       end
       reset_sidekiq_lifecycle_events
     end
@@ -40,11 +40,11 @@ class TestFetcher < Sidekiq::Test
     it 'cleans up dead jobs on startup' do
       # First we have to mimic old jobs lying around
       previous_process_identity = "sidekiq-pipeline-32152-xfwvw:42251:#{SecureRandom.hex(6)}"
-      priority_queue = "priority-queue:bar"
+      priority_queue = 'priority-queue:bar'
       previous_wip_queue = "queue:spriorityq|#{previous_process_identity}|#{priority_queue}"
 
       Sidekiq.redis do |conn|
-        conn.sadd("super_processes_priority", previous_process_identity)
+        conn.sadd('super_processes_priority', previous_process_identity)
         conn.sadd("#{previous_process_identity}:super_priority_queues", previous_wip_queue)
         conn.sadd(previous_wip_queue, job.to_json)
       end
@@ -67,7 +67,7 @@ class TestFetcher < Sidekiq::Test
       SidekiqUtilInstance.new.fire_event(:startup)
 
       Sidekiq.redis do |conn|
-        registered_processes = conn.smembers("super_processes_priority")
+        registered_processes = conn.smembers('super_processes_priority')
         assert_equal 1, registered_processes.size
         assert_equal fetch.identity, registered_processes.first
         private_queues = conn.smembers("#{registered_processes.first}:super_priority_queues")
@@ -84,7 +84,7 @@ class TestFetcher < Sidekiq::Test
       SidekiqUtilInstance.new.fire_event(:heartbeat)
 
       Sidekiq.redis do |conn|
-        registered_processes = conn.smembers("super_processes_priority")
+        registered_processes = conn.smembers('super_processes_priority')
         assert_equal 1, registered_processes.size
         assert_equal fetch.identity, registered_processes.first
         private_queues = conn.smembers("#{registered_processes.first}:super_priority_queues")
@@ -107,7 +107,7 @@ class TestFetcher < Sidekiq::Test
       assert_equal 0, q.size
       assert uow.acknowledge
       Sidekiq.redis do |conn|
-        assert_nil conn.zscore("priority-queue-counts:foo", job['subqueue'])
+        assert_nil conn.zscore('priority-queue-counts:foo', job['subqueue'])
         assert !conn.sismember(wip_queue, job.to_json)
       end
     end
@@ -118,15 +118,63 @@ class TestFetcher < Sidekiq::Test
       identity = fetch.identity
       wip_queue = "queue:spriorityq|#{identity}|priority-queue:foo"
 
-      killed_job = {'jid' => 'blah_blah', 'args' => [1,2,3], 'subqueue' => 1 }
+      killed_job = { 'jid' => 'blah_blah', 'args' => [1, 2, 3], 'subqueue' => 1 }
       Sidekiq.redis { |conn| conn.sadd(wip_queue, killed_job.to_json) }
 
       fetch.bulk_requeue(nil, nil)
       assert_equal 2, Sidekiq::PriorityQueue::Queue.new('foo').size
     end
 
+    it "doesn't retrieve orphan jobs if checked recently" do
+      # Setup lost job
+      previous_process_identity = "sidekiq-pipeline-32152-xfwvw:42251:#{SecureRandom.hex(6)}"
+      priority_queue = 'priority-queue:bar'
+      previous_wip_queue = "queue:spriorityq|#{previous_process_identity}|#{priority_queue}"
+
+      Sidekiq.redis { |conn| conn.sadd(previous_wip_queue, job.to_json) }
+      # Setup recent orphan check
+      Sidekiq.redis { |conn| conn.set('priority_reliable_fetch_orphan_check', Time.now.to_f, ex: 3600, nx: true) }
+
+      # Then we setup the fetcher
+      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(queues: ['bar'], index: 0)
+      fetch.setup
+
+      # And here we test that orphan check didn't run
+      SidekiqUtilInstance.new.fire_event(:startup)
+      assert_equal 0, Sidekiq::PriorityQueue::Queue.new('bar').size
+      assert_equal 1, Sidekiq.redis { |conn| conn.scard(previous_wip_queue) }
+    end
+
+    it 'retrieves orphan jobs and pushes them back to priority queues' do
+      # First we have to mimic old jobs lying around
+      previous_process_identity = "sidekiq-pipeline-32152-xfwvw:42251:#{SecureRandom.hex(6)}"
+      priority_queue = 'priority-queue:bar'
+      previous_wip_queue = "queue:spriorityq|#{previous_process_identity}|#{priority_queue}"
+
+      Sidekiq.redis { |conn| conn.sadd(previous_wip_queue, job.to_json) }
+
+      # Then we setup the fetcher
+      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(queues: ['bar'], index: 0)
+      fetch.setup
+
+      # And here we test is really on startup it brings back old jobs
+      assert_equal 0, Sidekiq::PriorityQueue::Queue.new('bar').size
+      SidekiqUtilInstance.new.fire_event(:startup)
+      assert_equal 1, Sidekiq::PriorityQueue::Queue.new('bar').size
+      refute Sidekiq.redis { |c| c.exists?(previous_wip_queue) }
+    end
+
+    it 'works even if orphan check raises an error' do
+      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(queues: ['bar'], index: 0)
+      fetch.setup
+
+      def fetch.orphan_check?; raise StandardError; end
+      SidekiqUtilInstance.new.fire_event(:startup, reraise: true)
+      # If it passes, it didn't rise which is correct
+    end
+
     it 'retrieves with strict setting' do
-      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(:queues => ['basic', 'bar', 'bar'], :strict => true)
+      fetch = Sidekiq::PriorityQueue::ReliableFetch.new(queues: %w[basic bar bar], strict: true)
       cmd = fetch.queues_cmd
       assert_equal cmd, ['priority-queue:basic', 'priority-queue:bar']
     end
