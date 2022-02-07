@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sidekiq-priority_queue (1.0.5)
+    sidekiq-priority_queue (1.0.6)
       sidekiq (>= 6.2.2)
 
 GEM
@@ -23,8 +23,8 @@ GEM
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
     rake (13.0.3)
-    redis (4.5.1)
-    sidekiq (6.2.2)
+    redis (4.6.0)
+    sidekiq (6.4.0)
       connection_pool (>= 2.2.2)
       rack (~> 2.0)
       redis (>= 4.2.0)
