@@ -9,9 +9,6 @@ jobs:
     name: Run tests
     outputs:
       job-status: ${{ job.status }}
-    strategy:
-      matrix:
-        ruby-version: [ '2.7', '3.0' ]
     runs-on: ubuntu-18.04
     timeout-minutes: 10
     services:
@@ -25,7 +22,7 @@ jobs:
       - name: Set up correct version of Ruby
         uses: actions/setup-ruby@v1
         with:
-          ruby-version: ${{ matrix.ruby-version }}
+          ruby-version: 2.7
       - name: Install dependencies via Bundler
         run: bundle install --jobs 4 --retry 3
       - name: Run tests
